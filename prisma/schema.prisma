@@ -90,6 +90,8 @@ model Proveedor {
   nombre      String
   contacto    String?
   telefono    String?
+  email       String?
+  direccion   String?
   activo      Boolean  @default(true)
   compras     Compra[]
   @@map("proveedores")
