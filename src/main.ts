@@ -43,6 +43,9 @@ app.patch('/api/inventory/providers/:id', inventoryController.updateProvider);
 
 app.get('/api/inventory/products', inventoryController.listProducts);
 app.post('/api/inventory/products', inventoryController.createProduct);
+
+app.post('/api/inventory/purchases', inventoryController.registerPurchase);
+
 app.post('/api/inventory/stock', inventoryController.addStock);
 app.get('/api/inventory/imei/:imei', inventoryController.lookupImei);
 

@@ -1,5 +1,8 @@
 // public/app.js
 
+let purchaseItems = [];
+let currentImeiContext = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     updateDashboardStats();
     updateClock();
@@ -58,7 +61,6 @@ async function refreshMasterLists() {
     renderMasterList('cfg-brand-list', brands, 'brands');
     renderMasterList('cfg-attr-list', attributes, 'attributes');
 
-    // Cargar solo activos en los selectores
     const resActive = await fetch('/api/inventory/master?active=true');
     const activeData = await resActive.json();
     fillSelect('prod-category', activeData.categories);
@@ -114,24 +116,6 @@ async function saveMaster(type, inputId) {
     refreshMasterLists();
 }
 
-// DROPDOWNS & ATTRS
-function fillSelect(id, items) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '<option value="">Seleccione...</option>' +
-        items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
-}
-
-function renderAttrSelector(id, items) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = items.map(i => `
-        <div style="display: flex; align-items: center; gap: 5px;">
-            <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}">
-            <label for="chk-${i.id}" style="margin:0; cursor:pointer;">${i.nombre}</label>
-            <input type="text" id="val-${i.id}" placeholder="Valor" style="width: 60px; height: 20px; font-size: 0.7rem;">
-        </div>
-    `).join('');
-}
-
 /**
  * PROVIDERS
  */
@@ -182,26 +166,177 @@ async function editProvider(id, currentName) {
 }
 
 /**
- * INVENTORY & STOCK
+ * COMPRAS (STOCK IN)
+ */
+async function openPurchaseModal() {
+    document.getElementById('modal-purchase').style.display = 'flex';
+    purchaseItems = [];
+    document.getElementById('purchase-items-body').innerHTML = '';
+    document.getElementById('pur-total-display').innerText = 'Total Compra: S/ 0.00';
+
+    // Cargar proveedores activos
+    const res = await fetch('/api/inventory/master?active=true');
+    const data = await res.json();
+    fillSelect('pur-provider', data.providers);
+
+    addPurchaseLine(); // Empieza con una fila
+}
+
+async function addPurchaseLine() {
+    const id = Date.now();
+    const res = await fetch('/api/inventory/products');
+    const products = await res.json();
+
+    const tr = document.createElement('tr');
+    tr.id = `pur-row-${id}`;
+    tr.innerHTML = `
+        <td>
+            <select onchange="updatePurchaseLine(${id}, this.value)" id="prod-sel-${id}" required>
+                <option value="">Seleccione...</option>
+                ${products.map(p => `<option value="${p.id}" data-imei="${p.requiere_imei}" data-name="${p.nombre}">${p.nombre}</option>`).join('')}
+            </select>
+        </td>
+        <td><input type="number" value="1" min="1" onchange="updatePurchaseTotal()" id="cant-${id}"></td>
+        <td><input type="number" step="0.01" value="0.00" onchange="updatePurchaseTotal()" id="price-${id}"></td>
+        <td id="total-${id}">S/ 0.00</td>
+        <td>
+            <div style="display: flex; gap: 5px;">
+                <button type="button" class="btn-micro" id="btn-imei-${id}" onclick="openImeiInput(${id})" style="display: none;" title="Ingresar IMEIs"><i class="fas fa-barcode"></i></button>
+                <button type="button" class="btn-micro" onclick="removePurchaseLine(${id})" style="color: var(--danger);"><i class="fas fa-trash"></i></button>
+            </div>
+        </td>
+    `;
+    document.getElementById('purchase-items-body').appendChild(tr);
+    purchaseItems.push({ id, productoId: null, imeis: [] });
+}
+
+function updatePurchaseLine(id, productoId) {
+    const item = purchaseItems.find(i => i.id === id);
+    item.productoId = productoId;
+
+    const sel = document.getElementById(`prod-sel-${id}`);
+    const requiresImei = sel.options[sel.selectedIndex].dataset.imei === 'true';
+    document.getElementById(`btn-imei-${id}`).style.display = requiresImei ? 'block' : 'none';
+
+    updatePurchaseTotal();
+}
+
+function removePurchaseLine(id) {
+    document.getElementById(`pur-row-${id}`).remove();
+    purchaseItems = purchaseItems.filter(i => i.id !== id);
+    updatePurchaseTotal();
+}
+
+function updatePurchaseTotal() {
+    let total = 0;
+    purchaseItems.forEach(item => {
+        const cant = parseFloat(document.getElementById(`cant-${item.id}`).value) || 0;
+        const price = parseFloat(document.getElementById(`price-${item.id}`).value) || 0;
+        const lineTotal = cant * price;
+        document.getElementById(`total-${item.id}`).innerText = `S/ ${lineTotal.toFixed(2)}`;
+        total += lineTotal;
+    });
+    document.getElementById('pur-total-display').innerText = `Total Compra: S/ ${total.toFixed(2)}`;
+}
+
+function openImeiInput(id) {
+    currentImeiContext = id;
+    const item = purchaseItems.find(i => i.id === id);
+    const cant = parseInt(document.getElementById(`cant-${id}`).value);
+    const sel = document.getElementById(`prod-sel-${id}`);
+    const name = sel.options[sel.selectedIndex].dataset.name;
+
+    document.getElementById('imei-product-name').innerText = `${name} (${cant} unidades)`;
+    const container = document.getElementById('imeis-container');
+    container.innerHTML = '';
+
+    for (let i = 0; i < cant; i++) {
+        const val = item.imeis[i] || '';
+        container.innerHTML += `<input type="text" placeholder="IMEI ${i + 1}" class="imei-input" value="${val}" required maxlength="15">`;
+    }
+
+    document.getElementById('modal-imeis').style.display = 'flex';
+}
+
+function saveImeisTemp() {
+    const inputs = document.querySelectorAll('.imei-input');
+    const imeis = Array.from(inputs).map(inp => inp.value).filter(v => v);
+
+    const item = purchaseItems.find(i => i.id === currentImeiContext);
+    const cantRequired = parseInt(document.getElementById(`cant-${currentImeiContext}`).value);
+
+    if (imeis.length < cantRequired) {
+        alert(`Debes ingresar los ${cantRequired} IMEIs correctamente.`);
+        return;
+    }
+
+    item.imeis = imeis;
+    document.getElementById('modal-imeis').style.display = 'none';
+    document.getElementById(`btn-imei-${currentImeiContext}`).style.background = 'var(--success)';
+}
+
+/**
+ * INVENTORY LOGIC
  */
 async function loadInventory() {
     const res = await fetch('/api/inventory/products');
     const products = await res.json();
     const tbody = document.getElementById('inventory-list-body');
-    if (tbody) tbody.innerHTML = products.map(p => `
-        <tr>
-            <td>${p.sku}</td>
-            <td>${p.nombre}</td>
-            <td>${p.marca.nombre} / ${p.categoria.nombre}</td>
-            <td style="color: var(--danger);">S/ ${Number(p.precio_compra).toFixed(2)}</td>
-            <td style="color: var(--success);">S/ ${Number(p.precios.retail).toFixed(2)}</td>
-            <td>-</td>
-        </tr>
+    if (tbody) tbody.innerHTML = products.map(p => {
+        const stockActual = p.unidades?.filter(u => u.estado_inventario === 'Disponible').length || 0;
+        return `
+            <tr>
+                <td>${p.sku}</td>
+                <td>${p.nombre}</td>
+                <td>${p.marca.nombre} / ${p.categoria.nombre}</td>
+                <td style="color: var(--danger);">S/ ${Number(p.precio_compra).toFixed(2)}</td>
+                <td style="color: var(--success);">S/ ${Number(p.precios.retail).toFixed(2)}</td>
+                <td>
+                    <span class="status-badge ${stockActual <= p.stock_minimo ? 'warning' : 'success'}">
+                        ${stockActual}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function openNewProductModal() {
+    document.getElementById('modal-product').style.display = 'flex';
+    refreshMasterLists();
+}
+
+function closeProductModal() {
+    document.getElementById('modal-product').style.display = 'none';
+}
+
+async function updateDashboardStats() {
+    const res = await fetch('/api/reports/daily-sales');
+    const data = await res.json();
+    const el = document.getElementById('stat-daily-sales');
+    if (el) el.innerText = `S/ ${(data.total_ingresos || 0).toFixed(2)}`;
+}
+
+// DROPDOWNS & ATTRS
+function fillSelect(id, items) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<option value="">Seleccione...</option>' +
+        items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+}
+
+function renderAttrSelector(id, items) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = items.map(i => `
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}">
+            <label for="chk-${i.id}" style="margin:0; cursor:pointer;">${i.nombre}</label>
+            <input type="text" id="val-${i.id}" placeholder="Valor" style="width: 60px; height: 20px; font-size: 0.7rem;">
+        </div>
     `).join('');
 }
 
 function initFormListeners() {
-    // ... same as before
+    // FORM PRODUCTO
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const attributes = [];
@@ -226,6 +361,7 @@ function initFormListeners() {
         if (res.ok) { alert('Producto guardado'); document.getElementById('modal-product').style.display = 'none'; loadInventory(); }
     });
 
+    // FORM PROVEEDOR
     document.getElementById('form-new-provider')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const payload = {
@@ -245,10 +381,38 @@ function initFormListeners() {
             alert('Proveedor registrado');
             document.getElementById('modal-provider').style.display = 'none';
             loadProviders();
-            e.target.reset(); // Limpiar formulario
+            e.target.reset();
+        }
+    });
+
+    // FORM COMPRA
+    document.getElementById('form-purchase')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            proveedorId: document.getElementById('pur-provider').value,
+            numero_factura: document.getElementById('pur-invoice').value,
+            items: purchaseItems.map(item => ({
+                productoId: item.productoId,
+                cantidad: parseInt(document.getElementById(`cant-${item.id}`).value),
+                precio_unit: parseFloat(document.getElementById(`price-${item.id}`).value),
+                imeis: item.imeis
+            }))
+        };
+
+        const res = await fetch('/api/inventory/purchases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('Compra registrada y Stock actualizado');
+            document.getElementById('modal-purchase').style.display = 'none';
+            loadInventory();
         } else {
             const err = await res.json();
-            alert(`Error: ${err.error || 'No se pudo guardar'}`);
+            alert(`Error: ${err.error}`);
         }
     });
 }

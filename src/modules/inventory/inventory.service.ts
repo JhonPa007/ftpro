@@ -135,4 +135,74 @@ export class InventoryService {
             orderBy: { nombre: 'asc' }
         });
     }
+
+    /**
+     * COMPRAS (STOCK IN)
+     */
+    async registerPurchase(data: {
+        proveedorId: string;
+        numero_factura: string;
+        items: Array<{
+            productoId: string;
+            cantidad: number;
+            precio_unit: number;
+            imeis?: string[];
+        }>;
+    }) {
+        // Calcular total
+        const total_compra = data.items.reduce((acc, item) => acc + (item.cantidad * item.precio_unit), 0);
+
+        return await prisma.$transaction(async (tx) => {
+            // 1. Crear Cabecera
+            const compra = await tx.compra.create({
+                data: {
+                    proveedorId: data.proveedorId,
+                    numero_factura: data.numero_factura,
+                    total_compra: total_compra
+                }
+            });
+
+            // 2. Procesar cada item
+            for (const item of data.items) {
+                // A. Crear Detalle de Compra
+                const detalle = await tx.detalleCompra.create({
+                    data: {
+                        compraId: compra.id,
+                        productoId: item.productoId,
+                        cantidad: item.cantidad,
+                        precio_unit: item.precio_unit
+                    }
+                });
+
+                // B. Crear Unidades de Inventario
+                if (item.imeis && item.imeis.length > 0) {
+                    // Si tiene IMEIs, crear uno por uno
+                    await tx.itemInventario.createMany({
+                        data: item.imeis.map(imei => ({
+                            productoId: item.productoId,
+                            detalleCompraId: detalle.id,
+                            imei: imei,
+                            estado_inventario: 'Disponible'
+                        }))
+                    });
+                } else {
+                    // Si no tiene IMEIs (ej: accesorios), crear N registros genéricos
+                    const itemsData = Array.from({ length: item.cantidad }).map(() => ({
+                        productoId: item.productoId,
+                        detalleCompraId: detalle.id,
+                        estado_inventario: 'Disponible'
+                    }));
+                    await tx.itemInventario.createMany({ data: itemsData });
+                }
+
+                // C. Opcional: Actualizar el precio de compra histórico del producto
+                await tx.producto.update({
+                    where: { id: item.productoId },
+                    data: { precio_compra: item.precio_unit }
+                });
+            }
+
+            return compra;
+        });
+    }
 }

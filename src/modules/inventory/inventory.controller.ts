@@ -72,7 +72,13 @@ export const listProducts = async (req: Request, res: Response) => {
     catch (error: any) { res.status(500).json({ error: error.message }); }
 };
 
-// STOCK
+// COMPRAS (STOCK IN)
+export const registerPurchase = async (req: Request, res: Response) => {
+    try { res.json(await inventoryService.registerPurchase(req.body)); }
+    catch (error: any) { res.status(400).json({ error: error.message }); }
+};
+
+// STOCK / IMEI
 export const addStock = async (req: Request, res: Response) => {
     try { res.json(await inventoryService.registerStockMovement(req.body.productId as string, req.body.items)); }
     catch (error: any) { res.status(400).json({ error: error.message }); }
