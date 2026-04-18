@@ -9,7 +9,7 @@ export class ReportsService {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const stats = await prisma.invoice.aggregate({
+        const stats = await prisma.factura.aggregate({
             where: {
                 created_at: { gte: today }
             },
@@ -24,34 +24,32 @@ export class ReportsService {
 
         return {
             fecha: today.toISOString().split('T')[0],
-            total_ingresos: stats._sum.total_venta || 0,
-            total_igv: stats._sum.igv_total || 0,
+            total_ingresos: Number(stats._sum.total_venta || 0),
+            total_igv: Number(stats._sum.igv_total || 0),
             transacciones: stats._count.id
         };
     }
 
     /**
-     * Alerta de Inventario Crítico (Para compras B2B)
+     * Alerta de Inventario Crítico
      */
     async getLowStockAlerts() {
-        const products = await prisma.product.findMany({
+        const products = await prisma.producto.findMany({
             include: {
                 _count: {
-                    select: { items: { where: { estado_inventario: 'Disponible' } } }
+                    select: { unidades: { where: { estado_inventario: 'Disponible' } } }
                 }
             }
         });
 
-        // Filtrar los que están por debajo del mínimo configurado
         return products
-            .filter(p => (p as any)._count.items <= p.stock_minimo)
+            .filter(p => (p as any)._count.unidades <= p.stock_minimo)
             .map(p => ({
                 id: p.id,
                 nombre: p.nombre,
                 sku: p.sku,
-                stock_actual: (p as any)._count.items,
-                stock_minimo: p.stock_minimo,
-                clasificacion: p.clasificacion_abc
+                stock_actual: (p as any)._count.unidades,
+                stock_minimo: p.stock_minimo
             }));
     }
 
@@ -59,7 +57,7 @@ export class ReportsService {
      * Estado de Servicio Técnico
      */
     async getSupportStats() {
-        return await prisma.serviceOrder.groupBy({
+        return await prisma.ordenServicio.groupBy({
             by: ['estado_servicio'],
             _count: {
                 id: true

@@ -6,27 +6,27 @@ export class InventoryService {
      * MAESTROS: CATEGORÍAS, MARCAS, CARACTERÍSTICAS
      */
     async createCategory(nombre: string, descripcion?: string) {
-        return await prisma.category.create({ data: { nombre, descripcion } });
+        return await prisma.categoria.create({ data: { nombre, descripcion } });
     }
 
     async createBrand(nombre: string) {
-        return await prisma.brand.create({ data: { nombre } });
+        return await prisma.marca.create({ data: { nombre } });
     }
 
     async createAttribute(nombre: string) {
-        return await prisma.attribute.create({ data: { nombre } });
+        return await prisma.caracteristica.create({ data: { nombre } });
     }
 
     async getAllCategories() {
-        return await prisma.category.findMany({ orderBy: { nombre: 'asc' } });
+        return await prisma.categoria.findMany({ orderBy: { nombre: 'asc' } });
     }
 
     async getAllBrands() {
-        return await prisma.brand.findMany({ orderBy: { nombre: 'asc' } });
+        return await prisma.marca.findMany({ orderBy: { nombre: 'asc' } });
     }
 
     async getAllAttributes() {
-        return await prisma.attribute.findMany({ orderBy: { nombre: 'asc' } });
+        return await prisma.caracteristica.findMany({ orderBy: { nombre: 'asc' } });
     }
 
     /**
@@ -35,27 +35,27 @@ export class InventoryService {
     async createProduct(data: {
         sku: string;
         nombre: string;
-        categoryId: string;
-        brandId: string;
+        categoriaId: string;
+        marcaId: string;
         precios: any;
         precio_compra: number;
         stock_minimo: number;
         requiere_imei: boolean;
         attributes?: Array<{ id: string; valor: string }>;
     }) {
-        return await prisma.product.create({
+        return await prisma.producto.create({
             data: {
                 sku: data.sku,
                 nombre: data.nombre,
-                categoryId: data.categoryId,
-                brandId: data.brandId,
+                categoriaId: data.categoriaId,
+                marcaId: data.marcaId,
                 precios: data.precios,
                 precio_compra: data.precio_compra,
                 stock_minimo: data.stock_minimo,
                 requiere_imei: data.requiere_imei,
-                attributes: data.attributes ? {
+                caracteristicas: data.attributes ? {
                     create: data.attributes.map(attr => ({
-                        attributeId: attr.id,
+                        caracteristicaId: attr.id,
                         valor: attr.valor
                     }))
                 } : undefined
@@ -64,25 +64,25 @@ export class InventoryService {
     }
 
     async getProductCatalog() {
-        return await prisma.product.findMany({
+        return await prisma.producto.findMany({
             include: {
-                category: true,
-                brand: true,
-                attributes: { include: { attribute: true } }
+                categoria: true,
+                marca: true,
+                caracteristicas: { include: { caracteristica: true } }
             },
             orderBy: { created_at: 'desc' }
         });
     }
 
-    async registerStockMovement(productId: string, items: Array<{
+    async registerStockMovement(productoId: string, items: Array<{
         imei?: string;
         iccid?: string;
         estado_dispositivo: string;
         ubicacion: string;
     }>) {
-        return await prisma.stockItem.createMany({
+        return await prisma.itemInventario.createMany({
             data: items.map(item => ({
-                productId,
+                productoId,
                 imei: item.imei,
                 iccid: item.iccid,
                 estado_inventario: 'Disponible'
@@ -91,9 +91,9 @@ export class InventoryService {
     }
 
     async searchByImei(imei: string) {
-        return await prisma.stockItem.findUnique({
+        return await prisma.itemInventario.findUnique({
             where: { imei },
-            include: { product: { include: { brand: true, category: true } } }
+            include: { producto: { include: { marca: true, categoria: true } } }
         });
     }
 }

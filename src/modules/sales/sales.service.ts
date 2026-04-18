@@ -9,13 +9,13 @@ export class SalesService {
         cliente: { tipoDoc: string; numeroDoc: string; nombre: string };
         paymentMethod: string;
     }) {
-        return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        return await prisma.$transaction(async (tx: any) => {
             // 1. Validar producto
-            const product = await tx.product.findUnique({ where: { id: dto.productId } });
+            const product = await tx.producto.findUnique({ where: { id: dto.productId } });
             if (!product) throw new Error('Producto no encontrado');
 
-            // 2. Asegurar existencia del cliente en CRM (Integración CRM-POS)
-            const customer = await tx.customer.upsert({
+            // 2. Asegurar existencia del cliente en CRM
+            const customer = await tx.cliente.upsert({
                 where: { numero_documento: dto.cliente.numeroDoc },
                 update: { nombre: dto.cliente.nombre, tipo_documento: dto.cliente.tipoDoc },
                 create: {
@@ -29,9 +29,9 @@ export class SalesService {
             if (product.requiere_imei) {
                 if (!dto.imei) throw new Error('IMEI requerido para este producto');
 
-                const stockItem = await tx.stockItem.findFirst({
+                const stockItem = await tx.itemInventario.findFirst({
                     where: {
-                        productId: dto.productId,
+                        productoId: dto.productId,
                         imei: dto.imei,
                         estado_inventario: 'Disponible'
                     }
@@ -39,28 +39,25 @@ export class SalesService {
 
                 if (!stockItem) throw new Error('IMEI no disponible o no pertenece al producto');
 
-                await tx.stockItem.update({
+                await tx.itemInventario.update({
                     where: { id: stockItem.id },
                     data: { estado_inventario: 'Vendido' }
                 });
             }
 
             // 4. Calcular montos
-            const precios: any = product.precios;
-            const totalVenta = precios.retail;
+            const totalVenta = Number(product.precios.retail);
             const valorVenta = totalVenta / 1.18;
             const igvTotal = totalVenta - valorVenta;
 
             // 5. Crear factura técnica vinculada al CRM
-            const invoice = await tx.invoice.create({
+            const invoice = await tx.factura.create({
                 data: {
                     tipo_documento: dto.cliente.tipoDoc === '6' ? '01' : '03',
                     serie_correlativo: `F001-${Math.floor(Math.random() * 1000000)}`,
                     clienteId: customer.id,
-                    cliente_datos_respaldo: dto.cliente,
                     igv_total: igvTotal,
-                    total_venta: totalVenta,
-                    estado_sunat: 'PENDIENTE'
+                    total_venta: totalVenta
                 }
             });
 
