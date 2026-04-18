@@ -116,6 +116,28 @@ async function saveMaster(type, inputId) {
     refreshMasterLists();
 }
 
+async function quickAddMaster(type, targetSelectId) {
+    const name = prompt(`Ingrese el nombre de la nueva ${type.slice(0, -1)}:`);
+    if (!name) return;
+
+    const res = await fetch(`/api/inventory/${type}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: name })
+    });
+
+    if (res.ok) {
+        const newItem = await res.json();
+        await refreshMasterLists();
+
+        // Auto-seleccionar si el target es un select
+        const el = document.getElementById(targetSelectId);
+        if (el && el.tagName === 'SELECT') {
+            el.value = newItem.id;
+        }
+    }
+}
+
 /**
  * PROVIDERS
  */

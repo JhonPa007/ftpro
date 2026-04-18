@@ -251,11 +251,20 @@
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
-                        <label>Categoría</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label>Categoría</label>
+                            <button type="button" class="btn-micro"
+                                onclick="quickAddMaster('categories', 'prod-category')"
+                                style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
+                        </div>
                         <select id="prod-category" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Marca</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label>Marca</label>
+                            <button type="button" class="btn-micro" onclick="quickAddMaster('brands', 'prod-brand')"
+                                style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
+                        </div>
                         <select id="prod-brand" required></select>
                     </div>
                 </div>
@@ -270,7 +279,13 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Características Sugeridas</label>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label>Características Sugeridas</label>
+                        <button type="button" class="btn-micro"
+                            onclick="quickAddMaster('attributes', 'prod-attributes-container')"
+                            style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
+                    </div>
                     <div id="prod-attributes-container"
                         style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;"></div>
                 </div>
