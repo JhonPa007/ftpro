@@ -393,8 +393,8 @@ function initFormListeners() {
             const payload = {
                 sku: document.getElementById('prod-sku').value,
                 nombre: document.getElementById('prod-name').value,
-                brandId: document.getElementById('prod-brand').value,
-                categoryId: document.getElementById('prod-category').value,
+                marcaId: document.getElementById('prod-brand').value,
+                categoriaId: document.getElementById('prod-category').value,
                 precio_compra: parseFloat(document.getElementById('prod-price-buy').value) || 0,
                 precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) || 0 },
                 stock_minimo: 5,
