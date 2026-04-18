@@ -231,37 +231,48 @@ export class InventoryService {
                 imei: query,
                 estado_inventario: 'Disponible'
             },
-            include: { producto: true }
+            include: {
+                producto: {
+                    include: { marca: true, categoria: true }
+                }
+            }
         });
 
         if (itemByImei) {
+            const p = itemByImei.producto;
             return [{
                 type: 'IMEI',
-                id: itemByImei.producto.id,
-                sku: itemByImei.producto.sku,
-                nombre: itemByImei.producto.nombre,
-                precio: Number((itemByImei.producto.precios as any)?.retail || 0),
+                id: p.id,
+                sku: p.sku,
+                nombre: `${p.categoria?.nombre || ''} ${p.marca?.nombre || ''} ${p.nombre}`,
+                precio: Number((p.precios as any)?.retail || 0),
                 imei: itemByImei.imei,
                 unitId: itemByImei.id
             }];
         }
 
-        // 2. Buscar por SKU o Nombre
+        // 2. Buscar por SKU, Nombre, Marca o Categoría
         const products = await (prisma as any).producto.findMany({
             where: {
                 OR: [
                     { sku: { contains: query, mode: 'insensitive' } },
-                    { nombre: { contains: query, mode: 'insensitive' } }
+                    { nombre: { contains: query, mode: 'insensitive' } },
+                    { marca: { nombre: { contains: query, mode: 'insensitive' } } },
+                    { categoria: { nombre: { contains: query, mode: 'insensitive' } } }
                 ]
             },
-            take: 5
+            include: {
+                marca: true,
+                categoria: true
+            },
+            take: 10
         });
 
         return products.map((p: any) => ({
             type: 'PRODUCTO',
             id: p.id,
             sku: p.sku,
-            nombre: p.nombre,
+            nombre: `${p.categoria?.nombre || ''} ${p.marca?.nombre || ''} ${p.nombre}`,
             precio: Number((p.precios as any)?.retail || 0),
             requiere_imei: p.requiere_imei
         }));
