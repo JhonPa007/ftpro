@@ -160,3 +160,16 @@ model Factura {
   created_at              DateTime @default(now())
   @@map("facturas")
 }
+model Configuracion {
+  id              String   @id @default("default")
+  empresa_nombre  String   @default("FTPRO")
+  empresa_ruc     String?
+  empresa_logo    String?
+  tema            String   @default("Oscuro")
+  color_acento    String   @default("#00fff2")
+  sunat_api_key   String?
+  modulos         Json     @default("[]")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updated_at
+  @@map("configuracion")
+}
