@@ -2,6 +2,8 @@
 
 let purchaseItems = [];
 let currentImeiContext = null;
+let posCart = [];
+let selectedClient = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadConfig();
@@ -71,6 +73,176 @@ async function loadConfig() {
             });
         }
     } catch (e) { console.error('Error loading config:', e); }
+}
+
+/**
+ * POS SEARCH ENGINE
+ */
+async function handlePosSearch(query) {
+    if (query.length < 3) {
+        document.getElementById('pos-search-results').style.display = 'none';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/inventory/pos-search?q=${query}`);
+        const results = await res.json();
+        const dropdown = document.getElementById('pos-search-results');
+
+        if (results.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        dropdown.style.display = 'block';
+        dropdown.innerHTML = results.map(r => `
+            <div class="search-item" onclick="addToCart(${JSON.stringify(r).replace(/"/g, '&quot;')})">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>${r.nombre}</strong>
+                    <span class="text-neon">S/ ${r.precio.toFixed(2)}</span>
+                </div>
+                <small>${r.type === 'IMEI' ? 'IMEI: ' + r.imei : 'SKU: ' + r.sku}</small>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error in POS search:', e); }
+}
+
+function addToCart(item) {
+    document.getElementById('pos-search-results').style.display = 'none';
+    document.getElementById('pos-search').value = '';
+
+    if (item.type === 'IMEI') {
+        const exists = posCart.find(i => i.unitId === item.unitId);
+        if (exists) return alert('Este equipo ya está en el carrito');
+        posCart.push({ ...item, cantidad: 1 });
+    } else {
+        const exists = posCart.find(i => i.id === item.id && i.type === 'PRODUCTO');
+        if (exists) {
+            exists.cantidad++;
+        } else {
+            posCart.push({ ...item, cantidad: 1 });
+        }
+    }
+    renderCart();
+}
+
+function renderCart() {
+    const tbody = document.getElementById('pos-cart-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = posCart.map((item, index) => `
+        <tr>
+            <td>
+                <strong>${item.nombre}</strong> <br>
+                <small class="text-muted">${item.sku}</small>
+            </td>
+            <td>${item.imei || '<span class="text-muted">N/A</span>'}</td>
+            <td>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-micro" onclick="updateCartQty(${index}, -1)">-</button>
+                    <span>${item.cantidad}</span>
+                    <button class="btn-micro" onclick="updateCartQty(${index}, 1)">+</button>
+                </div>
+            </td>
+            <td>S/ ${item.precio.toFixed(2)}</td>
+            <td>S/ ${(item.precio * item.cantidad).toFixed(2)}</td>
+            <td>
+                <button class="btn-icon" onclick="removeFromCart(${index})"><i class="fas fa-times"></i></button>
+            </td>
+        </tr>
+    `).join('');
+
+    calculatePosTotals();
+}
+
+function updateCartQty(index, delta) {
+    if (posCart[index].type === 'IMEI') return alert('No se puede cambiar la cantidad de un equipo con IMEI');
+    posCart[index].cantidad += delta;
+    if (posCart[index].cantidad <= 0) posCart.splice(index, 1);
+    renderCart();
+}
+
+function removeFromCart(index) {
+    posCart.splice(index, 1);
+    renderCart();
+}
+
+function calculatePosTotals() {
+    const total = posCart.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+    const subtotal = total / 1.18;
+    const igv = total - subtotal;
+
+    document.getElementById('pos-subtotal').innerText = `S/ ${subtotal.toFixed(2)}`;
+    document.getElementById('pos-igv').innerText = `S/ ${igv.toFixed(2)}`;
+    document.getElementById('pos-total').innerText = `S/ ${total.toFixed(2)}`;
+}
+
+/**
+ * CLIENT SEARCH POS
+ */
+async function handleClientSearchPOS(query) {
+    if (query.length < 2) {
+        document.getElementById('pos-client-results').style.display = 'none';
+        return;
+    }
+    try {
+        const res = await fetch(`/api/crm/clients/search?q=${query}`);
+        const clients = await res.json();
+        const dropdown = document.getElementById('pos-client-results');
+        dropdown.style.display = 'block';
+        dropdown.innerHTML = clients.map(c => `
+            <div class="search-item" onclick="selectClientPOS(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                <strong>${c.nombre}</strong> <br>
+                <small>${c.numero_documento}</small>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error search client POS:', e); }
+}
+
+function selectClientPOS(client) {
+    selectedClient = client;
+    document.getElementById('pos-client-results').style.display = 'none';
+    document.getElementById('pos-client-search').value = '';
+    document.getElementById('selected-client-info').style.display = 'block';
+    document.getElementById('pos-client-name').innerText = client.nombre;
+    document.getElementById('pos-client-doc').innerText = client.numero_documento;
+}
+
+async function finalizeSale() {
+    if (posCart.length === 0) return alert('El carrito está vacío');
+    if (!selectedClient) return alert('Por favor selecciona un cliente');
+
+    const payload = {
+        clienteId: selectedClient.id,
+        tipo_documento: document.getElementById('pos-doc-type').value,
+        items: posCart.map(i => ({
+            productoId: i.id,
+            unitId: i.unitId,
+            cantidad: i.cantidad,
+            precio_unit: i.precio,
+            imei: i.imei
+        }))
+    };
+
+    try {
+        const res = await fetch('/api/sales/pos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('✅ Venta realizada exitosamente');
+            posCart = [];
+            selectedClient = null;
+            document.getElementById('selected-client-info').style.display = 'none';
+            renderCart();
+            showModule('dashboard');
+        } else {
+            const err = await res.json();
+            alert(`❌ Error: ${err.error}`);
+        }
+    } catch (e) { alert('Error al procesar la venta'); }
 }
 
 function applyVisualTheme(theme, save = true) {

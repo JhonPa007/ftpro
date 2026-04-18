@@ -20,7 +20,7 @@ model Cliente {
   direccion        String?
   created_at       DateTime @default(now())
 
-  facturas        Factura[]
+  ventas           Venta[]
   ordenesServicio OrdenServicio[]
   @@map("clientes")
 }
@@ -70,6 +70,7 @@ model Producto {
 
   unidades          ItemInventario[]
   caracteristicas   ProductoCaracteristica[]
+  ventas            DetalleVenta[]
   @@map("productos")
 }
 
@@ -149,17 +150,31 @@ model OrdenServicio {
   @@map("ordenes_servicio")
 }
 
-model Factura {
-  id                      String   @id @default(uuid())
-  tipo_documento          String
-  serie_correlativo       String   @unique
-  clienteId               String
-  cliente                 Cliente @relation(fields: [clienteId], references: [id])
-  igv_total               Decimal  @db.Decimal(10, 2)
-  total_venta             Decimal  @db.Decimal(10, 2)
-  created_at              DateTime @default(now())
-  @@map("facturas")
+model Venta {
+  id              String   @id @default(uuid())
+  numero_venta    Int      @unique @default(autoincrement())
+  tipo_documento  String   @default("BOLETA")
+  clienteId       String
+  cliente         Cliente  @relation(fields: [clienteId], references: [id])
+  total           Decimal  @db.Decimal(10, 2)
+  estado_pago     String   @default("PAGADO")
+  detalles        DetalleVenta[]
+  created_at      DateTime @default(now())
+  @@map("ventas")
 }
+
+model DetalleVenta {
+  id              String   @id @default(uuid())
+  ventaId         String
+  venta           Venta    @relation(fields: [ventaId], references: [id])
+  productoId       String
+  producto         Producto @relation(fields: [productoId], references: [id])
+  unitId          String?  // ID del ItemInventario especifico (ej: IMEI)
+  cantidad        Int
+  precio_unit     Decimal  @db.Decimal(10, 2)
+  @@map("ventas_detalles")
+}
+
 model Configuracion {
   id              String   @id @default("default")
   empresa_nombre  String   @default("FTPRO")

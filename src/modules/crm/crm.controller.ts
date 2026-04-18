@@ -22,3 +22,6 @@ export const getHistory = async (req: Request, res: Response) => {
         res.status(404).json({ error: error.message });
     }
 };
+export const searchClients = async (query: string) => {
+    return await crmService.searchClients(query);
+};

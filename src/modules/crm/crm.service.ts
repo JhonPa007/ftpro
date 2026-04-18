@@ -21,13 +21,28 @@ export class CrmService {
     }
 
     /**
+     * Búsqueda por nombre o documento
+     */
+    async searchClients(query: string) {
+        return await prisma.cliente.findMany({
+            where: {
+                OR: [
+                    { nombre: { contains: query, mode: 'insensitive' } },
+                    { numero_documento: { contains: query } }
+                ]
+            },
+            take: 5
+        });
+    }
+
+    /**
      * Obtener Vista 360 del Cliente (Historial Completo)
      */
     async getCustomerHistory(numeroDoc: string) {
         const customer = await prisma.cliente.findUnique({
             where: { numero_documento: numeroDoc },
             include: {
-                facturas: {
+                ventas: {
                     orderBy: { created_at: 'desc' },
                     take: 10
                 },
@@ -46,10 +61,11 @@ export class CrmService {
                 documento: `${customer.tipo_documento}-${customer.numero_documento}`,
                 contacto: customer.telefono || 'Sin teléfono'
             },
-            ventas: customer.facturas.map((inv: any) => ({
-                compra: inv.serie_correlativo,
-                monto: inv.total_venta,
-                fecha: inv.created_at
+            ventas: customer.ventas.map((v: any) => ({
+                id: v.id,
+                numero: v.numero_venta,
+                monto: Number(v.total),
+                fecha: v.created_at
             })),
             reparaciones: customer.ordenesServicio.map((so: any) => ({
                 orden: so.numero_orden,

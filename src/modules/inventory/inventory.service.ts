@@ -50,6 +50,23 @@ export class InventoryService {
         });
     }
 
+    async getMasters() {
+        return {
+            categories: await this.getAllCategories(),
+            brands: await this.getAllBrands(),
+            attributes: await this.getAllAttributes()
+        };
+    }
+
+    async saveMaster(type: string, name: string) {
+        switch (type) {
+            case 'categories': return await this.createCategory(name);
+            case 'brands': return await this.createBrand(name);
+            case 'attributes': return await this.createAttribute(name);
+            default: throw new Error('Tipo de maestro inválido');
+        }
+    }
+
     /**
      * CATÁLOGO Y STOCK
      */
@@ -204,5 +221,48 @@ export class InventoryService {
 
             return compra;
         });
+    }
+    // BUSQUEDA PARA POS
+    async searchForPOS(query: string) {
+        // 1. Buscar por IMEI exacto
+        const itemByImei = await prisma.itemInventario.findFirst({
+            where: {
+                imei: query,
+                estado_inventario: 'Disponible'
+            },
+            include: { producto: true }
+        });
+
+        if (itemByImei) {
+            return [{
+                type: 'IMEI',
+                id: itemByImei.producto.id,
+                sku: itemByImei.producto.sku,
+                nombre: itemByImei.producto.nombre,
+                precio: Number(itemByImei.producto.precios['retail'] || 0),
+                imei: itemByImei.imei,
+                unitId: itemByImei.id
+            }];
+        }
+
+        // 2. Buscar por SKU o Nombre
+        const products = await prisma.producto.findMany({
+            where: {
+                OR: [
+                    { sku: { contains: query, mode: 'insensitive' } },
+                    { nombre: { contains: query, mode: 'insensitive' } }
+                ]
+            },
+            take: 5
+        });
+
+        return products.map(p => ({
+            type: 'PRODUCTO',
+            id: p.id,
+            sku: p.sku,
+            nombre: p.nombre,
+            precio: Number(p.precios['retail'] || 0),
+            requiere_imei: p.requiere_imei
+        }));
     }
 }
