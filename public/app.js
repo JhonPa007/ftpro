@@ -336,6 +336,23 @@ function renderAttrSelector(id, items) {
 }
 
 function initFormListeners() {
+    // AUTO-SKU GENERATION
+    const updateSku = () => {
+        const catSel = document.getElementById('prod-category');
+        const brandSel = document.getElementById('prod-brand');
+        const nameInput = document.getElementById('prod-name');
+
+        const cat = catSel.options[catSel.selectedIndex]?.text.substring(0, 3).toUpperCase() || 'XXX';
+        const brand = brandSel.options[brandSel.selectedIndex]?.text.substring(0, 3).toUpperCase() || 'XXX';
+        const name = nameInput.value.substring(0, 3).toUpperCase() || 'XXX';
+
+        document.getElementById('prod-sku').value = `${cat}-${brand}-${name}`.replace(/Sele/gi, 'XXX');
+    };
+
+    document.getElementById('prod-category')?.addEventListener('change', updateSku);
+    document.getElementById('prod-brand')?.addEventListener('change', updateSku);
+    document.getElementById('prod-name')?.addEventListener('input', updateSku);
+
     // FORM PRODUCTO
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();

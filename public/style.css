@@ -48,6 +48,21 @@ nav h1 {
     gap: 10px;
 }
 
+.nav-select {
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--glass);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+select option {
+    background-color: #1a1a1a;
+    color: white;
+}
+
 .nav-link {
     padding: 1rem;
     border-radius: 12px;
