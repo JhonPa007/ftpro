@@ -173,3 +173,15 @@ model Configuracion {
   updated_at      DateTime @updatedAt
   @@map("configuracion")
 }
+model Usuario {
+  id              String   @id @default(uuid())
+  nombre          String
+  username        String   @unique
+  password        String
+  rol             String   @default("Vendedor")
+  permisos        Json     @default("[]") // Lista de modulos permitidos
+  activo          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  @@map("usuarios")
+}

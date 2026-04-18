@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
     });
 
+    loadUsers();
+
     // ESC to close all modals
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -94,6 +96,35 @@ function applyVisualTheme(theme, save = true) {
 function applyAccentColor(color, save = true) {
     document.documentElement.style.setProperty('--neon', color);
     if (save) saveConfig({ color_acento: color });
+}
+
+/**
+ * USER MANAGEMENT
+ */
+async function loadUsers() {
+    try {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        const tbody = document.getElementById('users-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.nombre}</td>
+                <td>${u.username}</td>
+                <td><span class="badge ${u.rol === 'Administrador' ? 'badge-primary' : 'badge-secondary'}">${u.rol}</span></td>
+                <td>${u.activo ? '✅ Activo' : '❌ Inactivo'}</td>
+                <td>
+                    <button class="btn-icon" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Error loading users:', e); }
+}
+
+async function deleteUser(id) {
+    if (!confirm('¿Seguro que deseas eliminar este usuario?')) return;
+    await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    loadUsers();
 }
 
 async function saveConfig(data) {
@@ -626,5 +657,45 @@ function initFormListeners() {
         await saveConfig(payload);
         alert('✅ Perfil de empresa actualizado');
         loadConfig();
+    });
+
+    // FORM NEW USER
+    document.getElementById('form-new-user')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const perms = Array.from(document.querySelectorAll('#user-perms-list input:checked')).map(i => i.value);
+        const payload = {
+            nombre: document.getElementById('user-fullname').value,
+            username: document.getElementById('user-username').value,
+            password: document.getElementById('user-password').value,
+            rol: document.getElementById('user-role').value,
+            permisos: perms
+        };
+
+        const res = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('✅ Usuario registrado exitosamente');
+            e.target.reset();
+            loadUsers();
+        } else {
+            const err = await res.json();
+            alert(`❌ Error: ${err.error}`);
+        }
+    });
+
+    // ROLE PRESETS
+    document.getElementById('user-role')?.addEventListener('change', (e) => {
+        const role = e.target.value;
+        const perms = document.querySelectorAll('#user-perms-list input');
+        perms.forEach(p => {
+            if (p.value === 'dashboard') return;
+            if (role === 'Administrador') p.checked = true;
+            if (role === 'Vendedor') p.checked = (p.value === 'pos' || p.value === 'inventory');
+            if (role === 'Tecnico') p.checked = (p.value === 'support');
+        });
     });
 }

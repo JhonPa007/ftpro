@@ -124,6 +124,65 @@
                         Licencia</button>
                 </div>
 
+                <!-- Gestión de Staff y Usuarios -->
+                <div class="card">
+                    <h3>Gestión de Staff y Permisos</h3>
+                    <form id="form-new-user" style="margin-top: 1rem;">
+                        <input type="hidden" id="user-id">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="user-fullname" required placeholder="Ej: Juan Perez">
+                        </div>
+                        <div class="form-group">
+                            <label>Usuario (Username)</label>
+                            <input type="text" id="user-username" required placeholder="jperez">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña</label>
+                            <input type="password" id="user-password" placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                            <label>Rol</label>
+                            <select id="user-role">
+                                <option value="Administrador">Administrador (Acceso Total)</option>
+                                <option value="Vendedor">Vendedor (POS + Prod)</option>
+                                <option value="Tecnico">Técnico (Soporte)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Permisos Específicos (IDs Módulos)</label>
+                            <div id="user-perms-list"
+                                style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                                <label><input type="checkbox" value="dashboard" checked disabled> Dashboard</label>
+                                <label><input type="checkbox" value="pos"> POS</label>
+                                <label><input type="checkbox" value="inventory"> Inventario</label>
+                                <label><input type="checkbox" value="support"> Soporte</label>
+                                <label><input type="checkbox" value="crm"> CRM</label>
+                                <label><input type="checkbox" value="config"> Config</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrar Usuario</button>
+                    </form>
+
+                    <div style="margin-top: 2rem;">
+                        <h4>Usuarios Registrados</h4>
+                        <table class="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Integraciones -->
                 <div class="card">
                     <h3>Integración Facturación (SUNAT)</h3>

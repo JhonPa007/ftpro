@@ -7,6 +7,7 @@ import * as reportsController from './modules/reports/reports.controller.js';
 import * as crmController from './modules/crm/crm.controller.js';
 import inventoryController from './modules/inventory/inventory.controller.js';
 import configController from './modules/config/config.controller.js';
+import userController from './modules/users/user.controller.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.static('public'));
 
 app.use('/api/inventory', inventoryController);
 app.use('/api/config', configController);
+app.use('/api/users', userController);
 
 // Endpoint de Punto de Venta (POS)
 app.post('/api/sales/pos', createSale);
