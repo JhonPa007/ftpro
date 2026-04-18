@@ -96,39 +96,16 @@
                         <label>Escanear IMEI / Serie</label>
                         <input type="text" id="pos-imei" placeholder="Escanee código de barras...">
                     </div>
-                    <hr style="border: 0.5px solid var(--glass); margin-bottom: 1.5rem;">
-                    <h3>Datos del Cliente</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
-                        <select id="pos-client-type">
-                            <option value="1">DNI</option>
-                            <option value="6">RUC</option>
-                        </select>
-                        <input type="text" id="pos-client-doc" placeholder="Número de documento">
-                    </div>
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <input type="text" id="pos-client-name" placeholder="Nombre completo / Razón social">
-                    </div>
                 </div>
 
                 <div class="card">
                     <h3>Resumen de Pago</h3>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                        <span>Subtotal</span>
-                        <span id="pos-subtotal">S/ 0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                        <span>IGV (18%)</span>
-                        <span id="pos-igv">S/ 0.00</span>
-                    </div>
                     <div
                         style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.5rem; margin: 2rem 0; color: var(--neon);">
                         <span>TOTAL</span>
                         <span id="pos-total">S/ 0.00</span>
                     </div>
                     <button style="width: 100%;" onclick="executeSale()">EMITIR COMPROBANTE</button>
-                    <p style="font-size: 0.7rem; color: #555; text-align: center; margin-top: 10px;">
-                        Facturación electrónica vinculada directamente a SUNAT.
-                    </p>
                 </div>
             </div>
         </section>
@@ -136,137 +113,122 @@
         <!-- INVENTORY MODULE -->
         <section id="module-inventory" style="display: none;">
             <header>
-                <h2>Gestión de Inventario</h2>
-                <div>
-                    <button onclick="openNewProductModal()" style="margin-right: 10px;">+ Nuevo Producto</button>
-                    <button onclick="openStockEntryModal()"
-                        style="background: var(--bg-main); border: 1px solid var(--neon); color: var(--neon);">
-                        <i class="fas fa-truck-loading"></i> Entrada de Stock
-                    </button>
+                <h2>Gestión de Inventario Estructurado</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="openNewProductModal()">+ Nuevo Producto</button>
+                    <button onclick="openStockEntryModal()" class="btn-secondary">Entrada Stock</button>
+                    <button onclick="openConfigModal()" class="btn-secondary"><i class="fas fa-cog"></i> Config</button>
                 </div>
             </header>
+
             <div class="card">
-                <h3>Catálogo de Productos</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>SKU</th>
-                            <th>Producto</th>
-                            <th>Stock Min</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-list-body">
-                        <!-- Cargando... -->
-                    </tbody>
-                </table>
+                <div class="inventory-tabs">
+                    <button class="tab-link active" onclick="switchTab('catalog')">Catálogo</button>
+                    <button class="tab-link" onclick="switchTab('movements')">Movimientos</button>
+                </div>
+
+                <div id="tab-catalog">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Producto</th>
+                                <th>Marca/Cat</th>
+                                <th>P. Compra</th>
+                                <th>P. Venta</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-list-body"></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
         <!-- CRM MODULE -->
         <section id="module-crm" style="display: none;">
             <header>
-                <h2>Panel de Clientes (CRM)</h2>
+                <h2>Clientes</h2>
             </header>
             <div class="card">
-                <input type="text" placeholder="Buscar por DNI..." style="margin-bottom: 1rem;">
-                <p>Módulo de historial de clientes en desarrollo.</p>
+                <p>Próximamente...</p>
             </div>
         </section>
     </main>
 
-    <!-- MODAL NUEVO PRODUCTO -->
-    <div id="modal-product" class="modal" style="display: none;">
+    <!-- MODAL CONFIGURACIÓN (CATEGORÍAS, MARCAS, ATRIBUTOS) -->
+    <div id="modal-config" class="modal" style="display: none;">
         <div class="modal-content card">
-            <h2><i class="fas fa-plus-circle"></i> Registrar Nuevo Producto</h2>
-            <form id="form-new-product">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <h2>Configuración de Maestros</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                    <h4>Categorías</h4>
                     <div class="form-group">
-                        <label>Categoría</label>
-                        <select id="prod-category" onchange="toggleCategoryFields()" required>
-                            <option value="">Seleccione...</option>
-                            <option value="Celulares">Celulares</option>
-                            <option value="Accesorios">Accesorios</option>
-                            <option value="Repuestos">Repuestos</option>
-                        </select>
+                        <input type="text" id="cfg-cat-name" placeholder="Nueva Categoría">
+                        <button onclick="saveMaster('categories', 'cfg-cat-name')">Añadir</button>
                     </div>
-                    <div class="form-group">
-                        <label>SKU (Código)</label>
-                        <input type="text" id="prod-sku" placeholder="Ej: IPH15-PRO-BK" required>
-                    </div>
+                    <ul id="cfg-cat-list" class="cfg-list"></ul>
                 </div>
-
+                <div>
+                    <h4>Marcas</h4>
+                    <div class="form-group">
+                        <input type="text" id="cfg-brand-name" placeholder="Nueva Marca">
+                        <button onclick="saveMaster('brands', 'cfg-brand-name')">Añadir</button>
+                    </div>
+                    <ul id="cfg-brand-list" class="cfg-list"></ul>
+                </div>
+            </div>
+            <div style="margin-top: 1rem;">
+                <h4>Características (Atributos)</h4>
                 <div class="form-group">
-                    <label>Nombre del Producto</label>
-                    <input type="text" id="prod-name" placeholder="Ej: iPhone 15 Pro Titanium Black" required>
+                    <input type="text" id="cfg-attr-name" placeholder="Ej: RAM, Color, Procesador">
+                    <button onclick="saveMaster('attributes', 'cfg-attr-name')">Añadir</button>
                 </div>
-
-                <div id="dynamic-specs" class="card"
-                    style="background: #0d1117; margin-bottom: 1rem; border-color: var(--neon);">
-                    <p style="font-size: 0.8rem; color: #555;">Seleccione una categoría para ver especificaciones...</p>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label>Precio Retail (S/)</label>
-                        <input type="number" id="prod-price-retail" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Stock Mínimo</label>
-                        <input type="number" id="prod-stock-min" value="5">
-                    </div>
-                    <div class="form-group">
-                        <label>Control IMEI</label>
-                        <select id="prod-requires-imei">
-                            <option value="true">SÍ (Celulares)</option>
-                            <option value="false">NO (Accesorios)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <button type="button" onclick="closeProductModal()"
-                        style="background: #333; flex: 1;">Cancelar</button>
-                    <button type="submit" style="flex: 2;">Guardar Producto</button>
-                </div>
-            </form>
+                <ul id="cfg-attr-list" class="cfg-list" style="display: flex; flex-wrap: wrap; gap: 5px;"></ul>
+            </div>
+            <button onclick="document.getElementById('modal-config').style.display='none'"
+                style="margin-top: 1rem;">Cerrar</button>
         </div>
     </div>
 
-    <!-- MODAL ENTRADA DE MERCADERÍA -->
-    <div id="modal-stock-entry" class="modal" style="display: none;">
+    <!-- MODAL NUEVO PRODUCTO (ACTUALIZADO) -->
+    <div id="modal-product" class="modal" style="display: none;">
         <div class="modal-content card">
-            <h2><i class="fas fa-truck-loading"></i> Entrada de Stock (IMEIs)</h2>
-            <form id="form-stock-entry">
-                <div class="form-group">
-                    <label>Producto</label>
-                    <select id="stock-product-id" required>
-                        <option value="">Cargando catálogo...</option>
-                    </select>
-                </div>
+            <h2>Regisrar Producto</h2>
+            <form id="form-new-product">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
-                        <label>Estado</label>
-                        <select id="stock-item-state">
-                            <option value="Nuevo">Nuevo</option>
-                            <option value="Usado">Usado</option>
-                        </select>
+                        <label>Marca</label>
+                        <select id="prod-brand" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Ubicación</label>
-                        <input type="text" id="stock-location" placeholder="Almacén A / Vitrina" required>
+                        <label>Categoría</label>
+                        <select id="prod-category" required></select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Lista de IMEIs (uno por línea)</label>
-                    <textarea id="stock-imei-list" rows="8"
-                        style="width: 100%; background: #0D1117; color: var(--neon); padding: 10px; font-family: monospace;"
-                        required></textarea>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                    <div class="form-group"><label>SKU</label><input type="text" id="prod-sku" required></div>
+                    <div class="form-group"><label>Nombre</label><input type="text" id="prod-name" required></div>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group"><label>P. Compra (S/)</label><input type="number" id="prod-price-buy"
+                            step="0.01" required></div>
+                    <div class="form-group"><label>P. Venta (S/)</label><input type="number" id="prod-price-retail"
+                            step="0.01" required></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Características del Producto</label>
+                    <div id="prod-attributes-container"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; background: #0d1117; padding: 10px; border-radius: 5px;">
+                        <!-- Checkboxes dinámicos -->
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 1rem;">
-                    <button type="button" onclick="closeStockEntryModal()"
-                        style="background: #333; flex: 1;">Cerrar</button>
-                    <button type="submit" style="flex: 2;">Registrar Ingreso</button>
+                    <button type="button" onclick="closeProductModal()"
+                        style="background: #333; flex: 1;">Cancelar</button>
+                    <button type="submit" style="flex: 2;">Guardar</button>
                 </div>
             </form>
         </div>

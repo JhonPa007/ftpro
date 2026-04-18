@@ -207,9 +207,43 @@ td {
     max-width: 600px;
 }
 
-label {
-    display: block;
-    font-size: 0.75rem;
-    margin-bottom: 5px;
-    color: #8B949E;
+/* Configuration lists */
+.cfg-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.cfg-list li {
+    padding: 5px;
+    border-bottom: 1px solid var(--glass);
+}
+
+/* Tabs */
+.inventory-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass);
+}
+
+.tab-link {
+    background: none;
+    border: none;
+    color: #555;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tab-link.active {
+    color: var(--neon);
+    border-bottom: 2px solid var(--neon);
+}
+
+.btn-secondary {
+    background: #161b22;
+    border: 1px solid var(--glass);
 }

@@ -11,226 +11,162 @@ function updateClock() {
     const clock = document.getElementById('real-time-clock');
     if (clock) {
         clock.innerText = new Date().toLocaleString('es-PE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
     }
 }
 
-/**
- * Navegación entre módulos
- */
 function showModule(moduleId) {
     const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
         if (el) el.style.display = 'none';
+        document.querySelector(`.nav-link[onclick*="${m}"]`)?.classList.remove('active');
     });
 
-    const activeModule = document.getElementById(`module-${moduleId}`);
-    if (activeModule) {
-        activeModule.style.display = 'block';
-    }
-
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.innerText.toLowerCase().includes(moduleId)) {
-            link.classList.add('active');
-        }
-    });
+    document.getElementById(`module-${moduleId}`).style.display = 'block';
+    document.querySelector(`.nav-link[onclick*="${moduleId}"]`)?.classList.add('active');
 
     if (moduleId === 'dashboard') updateDashboardStats();
     if (moduleId === 'inventory') loadInventory();
-    if (moduleId === 'pos') loadPosProducts();
 }
 
 /**
- * DASHBOARD STATS
+ * MASTER DATA MANAGEMENT
  */
-async function updateDashboardStats() {
-    try {
-        const salesRes = await fetch('/api/reports/daily-sales');
-        const salesData = await salesRes.json();
-        const salesEl = document.getElementById('stat-daily-sales');
-        if (salesEl) salesEl.innerText = `S/ ${(salesData.total_ingresos || 0).toFixed(2)}`;
+async function openConfigModal() {
+    document.getElementById('modal-config').style.display = 'flex';
+    refreshMasterLists();
+}
 
-        const inventoryRes = await fetch('/api/reports/inventory-alerts');
-        const alerts = await inventoryRes.json();
-        const tbody = document.querySelector('#table-inventory-alerts tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            alerts.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.nombre}</td>
-                    <td>${item.sku}</td>
-                    <td>${item.stock_actual}</td>
-                    <td>${item.stock_minimo}</td>
-                    <td><span class="status-badge status-low">STOCK BAJO</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (error) { console.error(error); }
+async function refreshMasterLists() {
+    const res = await fetch('/api/inventory/master');
+    const { categories, brands, attributes } = await res.json();
+
+    renderList('cfg-cat-list', categories);
+    renderList('cfg-brand-list', brands);
+    renderChips('cfg-attr-list', attributes);
+
+    // Actualizar dropdowns del form producto
+    fillSelect('prod-category', categories);
+    fillSelect('prod-brand', brands);
+    renderAttrSelector('prod-attributes-container', attributes);
+}
+
+function renderList(id, items) {
+    const el = document.getElementById(id);
+    el.innerHTML = items.map(i => `<li>${i.nombre}</li>`).join('');
+}
+
+function renderChips(id, items) {
+    const el = document.getElementById(id);
+    el.innerHTML = items.map(i => `<span class="status-badge" style="background: var(--glass);">${i.nombre}</span>`).join('');
+}
+
+function fillSelect(id, items) {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">Seleccione...</option>' +
+        items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+}
+
+function renderAttrSelector(id, items) {
+    const el = document.getElementById(id);
+    el.innerHTML = items.map(i => `
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}">
+            <label for="chk-${i.id}" style="margin:0; cursor:pointer;">${i.nombre}</label>
+            <input type="text" id="val-${i.id}" placeholder="Valor" style="width: 60px; height: 20px; font-size: 0.7rem;">
+        </div>
+    `).join('');
+}
+
+async function saveMaster(type, inputId) {
+    const name = document.getElementById(inputId).value;
+    if (!name) return;
+    await fetch(`/api/inventory/${type}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: name })
+    });
+    document.getElementById(inputId).value = '';
+    refreshMasterLists();
 }
 
 /**
- * INVENTORY LOGIC
+ * PRODUCT MANAGEMENT
  */
-async function loadInventory() {
-    try {
-        const res = await fetch('/api/inventory/products');
-        const products = await res.json();
-        const tbody = document.getElementById('inventory-list-body');
-        if (tbody) {
-            tbody.innerHTML = '';
-            products.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${p.sku}</td>
-                    <td>${p.nombre}</td>
-                    <td>${p.stock_minimo}</td>
-                    <td><button onclick="alert('SKU: ${p.sku}')">Detalles</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) { console.error(e); }
-}
-
-function openNewProductModal() {
+async function openNewProductModal() {
     document.getElementById('modal-product').style.display = 'flex';
+    refreshMasterLists();
 }
 
 function closeProductModal() {
     document.getElementById('modal-product').style.display = 'none';
 }
 
-function toggleCategoryFields() {
-    const category = document.getElementById('prod-category').value;
-    const container = document.getElementById('dynamic-specs');
-    const autoImei = document.getElementById('prod-requires-imei');
-
-    container.innerHTML = '';
-    if (category === 'Celulares') {
-        autoImei.value = 'true';
-        container.innerHTML = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <input type="text" id="spec-ram" placeholder="RAM"><input type="text" id="spec-storage" placeholder="Storage">
-            <input type="text" id="spec-cpu" placeholder="CPU"><input type="text" id="spec-screen" placeholder="Pantalla">
-        </div>`;
-    } else {
-        autoImei.value = 'false';
-        container.innerHTML = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <input type="text" id="spec-brand" placeholder="Marca"><input type="text" id="spec-material" placeholder="Material">
-        </div>`;
-    }
-}
-
-/**
- * STOCK ENTRY LOGIC
- */
-async function openStockEntryModal() {
-    document.getElementById('modal-stock-entry').style.display = 'flex';
+async function loadInventory() {
     const res = await fetch('/api/inventory/products');
     const products = await res.json();
-    const select = document.getElementById('stock-product-id');
-    select.innerHTML = '<option value="">Seleccione producto...</option>';
-    products.forEach(p => {
-        select.innerHTML += `<option value="${p.id}">${p.nombre} (${p.sku})</option>`;
-    });
-}
-
-function closeStockEntryModal() {
-    document.getElementById('modal-stock-entry').style.display = 'none';
-}
-
-/**
- * POS LOGIC
- */
-async function loadPosProducts() {
-    const res = await fetch('/api/inventory/products');
-    const products = await res.json();
-    const select = document.getElementById('pos-product-list');
-    if (select) {
-        select.innerHTML = '<option value="">Buscar equipo...</option>';
-        products.forEach(p => {
-            select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
-        });
-    }
-}
-
-async function executeSale() {
-    const data = {
-        productId: document.getElementById('pos-product-list')?.value,
-        imei: document.getElementById('pos-imei')?.value,
-        cliente: {
-            tipoDoc: document.getElementById('pos-client-type')?.value,
-            numeroDoc: document.getElementById('pos-client-doc')?.value,
-            nombre: document.getElementById('pos-client-name')?.value
-        },
-        paymentMethod: 'Efectivo'
-    };
-
-    try {
-        const res = await fetch('/api/sales/pos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await res.json();
-        if (result.error) alert(result.error);
-        else {
-            alert(`Venta OK: ${result.comprobante}`);
-            showModule('dashboard');
-        }
-    } catch (e) { alert('Error'); }
+    const tbody = document.getElementById('inventory-list-body');
+    tbody.innerHTML = products.map(p => `
+        <tr>
+            <td>${p.sku}</td>
+            <td>${p.nombre}</td>
+            <td>${p.brand.nombre} / ${p.category.nombre}</td>
+            <td style="color: var(--danger);">S/ ${Number(p.precio_compra).toFixed(2)}</td>
+            <td style="color: var(--success);">S/ ${Number(p.precios.retail).toFixed(2)}</td>
+            <td>-</td>
+        </tr>
+    `).join('');
 }
 
 /**
- * LISTENERS
+ * STATS & POS
  */
+async function updateDashboardStats() {
+    const salesRes = await fetch('/api/reports/daily-sales');
+    const salesData = await salesRes.json();
+    document.getElementById('stat-daily-sales').innerText = `S/ ${(salesData.total_ingresos || 0).toFixed(2)}`;
+}
+
 function initFormListeners() {
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Recolectar atributos seleccionados
+        const attributes = [];
+        document.querySelectorAll('input[name="attr-check"]:checked').forEach(chk => {
+            const val = document.getElementById(`val-${chk.value}`).value;
+            if (val) attributes.push({ id: chk.value, valor: val });
+        });
+
         const payload = {
             sku: document.getElementById('prod-sku').value,
             nombre: document.getElementById('prod-name').value,
-            categoria: document.getElementById('prod-category').value,
+            brandId: document.getElementById('prod-brand').value,
+            categoryId: document.getElementById('prod-category').value,
+            precio_compra: parseFloat(document.getElementById('prod-price-buy').value),
             precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
-            stock_minimo: parseInt(document.getElementById('prod-stock-min').value),
-            requiere_imei: document.getElementById('prod-requires-imei').value === 'true'
+            stock_minimo: 5,
+            requiere_imei: true,
+            attributes: attributes
         };
+
         const res = await fetch('/api/inventory/products', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (res.ok) { closeProductModal(); loadInventory(); }
+
+        if (res.ok) {
+            alert('Producto guardado');
+            closeProductModal();
+            loadInventory();
+        } else {
+            const err = await res.json();
+            alert(err.error);
+        }
     });
 
-    document.getElementById('form-stock-entry')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const imeiText = document.getElementById('stock-imei-list').value;
-        const imeis = imeiText.split('\n').filter(i => i.trim() !== '');
-        const payload = {
-            productId: document.getElementById('stock-product-id').value,
-            items: imeis.map(i => ({
-                imei: i.trim(),
-                estado_dispositivo: document.getElementById('stock-item-state').value,
-                ubicacion: document.getElementById('stock-location').value
-            }))
-        };
-        const res = await fetch('/api/inventory/stock', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) { alert('Carga exitosa'); closeStockEntryModal(); loadInventory(); }
-        else { const err = await res.json(); alert(err.error); }
-    });
 }

@@ -3,93 +3,97 @@ import prisma from '../../shared/prisma.js';
 
 export class InventoryService {
     /**
-     * Crear un nuevo catálogo de producto con especificaciones JSONB
+     * MAESTROS: CATEGORÍAS, MARCAS, CARACTERÍSTICAS
+     */
+    async createCategory(nombre: string, descripcion?: string) {
+        return await prisma.category.create({ data: { nombre, descripcion } });
+    }
+
+    async createBrand(nombre: string) {
+        return await prisma.brand.create({ data: { nombre } });
+    }
+
+    async createAttribute(nombre: string) {
+        return await prisma.attribute.create({ data: { nombre } });
+    }
+
+    async getAllCategories() {
+        return await prisma.category.findMany({ orderBy: { nombre: 'asc' } });
+    }
+
+    async getAllBrands() {
+        return await prisma.brand.findMany({ orderBy: { nombre: 'asc' } });
+    }
+
+    async getAllAttributes() {
+        return await prisma.attribute.findMany({ orderBy: { nombre: 'asc' } });
+    }
+
+    /**
+     * CATÁLOGO: PRODUCTO ESTRUCTURADO
      */
     async createProduct(data: {
         sku: string;
         nombre: string;
-        categoria: string;
+        categoryId: string;
+        brandId: string;
         precios: any;
-        especificaciones?: any;
+        precio_compra: number;
         stock_minimo: number;
-        clasificacion_abc?: string;
         requiere_imei: boolean;
+        attributes?: Array<{ id: string; valor: string }>;
     }) {
-        return await prisma.product.create({ data });
+        return await prisma.product.create({
+            data: {
+                sku: data.sku,
+                nombre: data.nombre,
+                categoryId: data.categoryId,
+                brandId: data.brandId,
+                precios: data.precios,
+                precio_compra: data.precio_compra,
+                stock_minimo: data.stock_minimo,
+                requiere_imei: data.requiere_imei,
+                attributes: data.attributes ? {
+                    create: data.attributes.map(attr => ({
+                        attributeId: attr.id,
+                        valor: attr.valor
+                    }))
+                } : undefined
+            }
+        });
     }
 
-    /**
-     * Ingreso de Almacén: Carga masiva de ítems únicos (IMEIs/ICCIDs)
-     */
+    async getProductCatalog() {
+        return await prisma.product.findMany({
+            include: {
+                category: true,
+                brand: true,
+                attributes: { include: { attribute: true } }
+            },
+            orderBy: { created_at: 'desc' }
+        });
+    }
+
     async registerStockMovement(productId: string, items: Array<{
         imei?: string;
         iccid?: string;
         estado_dispositivo: string;
         ubicacion: string;
     }>) {
-        const product = await prisma.product.findUnique({ where: { id: productId } });
-        if (!product) throw new Error('Producto no existe en el catálogo');
-
-        // Validación de integridad para celulares
-        if (product.requiere_imei) {
-            items.forEach(item => {
-                if (!item.imei || item.imei.length !== 15) {
-                    throw new Error(`El IMEI ${item.imei} es inválido (debe tener 15 dígitos)`);
-                }
-            });
-        }
-
         return await prisma.stockItem.createMany({
             data: items.map(item => ({
-                productId: productId,
+                productId,
                 imei: item.imei,
                 iccid: item.iccid,
-                estado_dispositivo: item.estado_dispositivo,
-                estado_inventario: 'Disponible',
-                ubicacion_almacen: item.ubicacion,
-                hash_verificacion: `SECURE-HASH-${Date.now()}` // Preparado para OSIPTEL
+                estado_inventario: 'Disponible'
             }))
         });
     }
 
-    /**
-     * Buscador Universal de IMEI (Para Servicio Técnico o Venta)
-     */
     async searchByImei(imei: string) {
-        const item = await prisma.stockItem.findUnique({
+        return await prisma.stockItem.findUnique({
             where: { imei },
-            include: { product: true }
+            include: { product: { include: { brand: true, category: true } } }
         });
-
-        if (!item) return null;
-
-        return {
-            imei: item.imei,
-            producto: item.product.nombre,
-            estado: item.estado_inventario,
-            garantia: item.product.categoria === 'Celulares' ? '12 meses' : 'N/A',
-            especificaciones: item.product.especificaciones
-        };
-    }
-
-    /**
-     * Reporte de Valorización de Inventario (Real por costo)
-     */
-    async getInventoryValue() {
-        const stock = await prisma.stockItem.findMany({
-            where: { estado_inventario: 'Disponible' },
-            include: { product: true }
-        });
-
-        const valorTotal = stock.reduce((sum, item) => {
-            const precios: any = item.product.precios;
-            return sum + Number(precios.retail);
-        }, 0);
-
-        return {
-            unidades_disponibles: stock.length,
-            valor_venta_estimado: valorTotal,
-            moneda: 'PEN'
-        };
     }
 }
