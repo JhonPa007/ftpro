@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // 0. Clientes (CRM)
@@ -59,8 +59,7 @@ model StockItem {
 // 3. Ficha de Internamiento (Servicio Técnico)
 model ServiceOrder {
   id                      String   @id @default(uuid())
-  numero_orden            Int      @unique 
-
+  numero_orden            Int      @unique @default(autoincrement())
   clienteId               String
   cliente                 Customer @relation(fields: [clienteId], references: [id])
   vendedor_id             String
@@ -75,8 +74,8 @@ model ServiceOrder {
   diagnostico_inicial     String?
   estado_servicio         String   @default("RECIBIDO") // RECIBIDO, DIAGNOSTICADO, REPARADO, ENTREGADO
   
-  presupuesto_estimado    Float? 
-  adelanto                Float    @default(0)
+  presupuesto_estimado    Decimal? @db.Decimal(10, 2)
+  adelanto                Decimal  @default(0) @db.Decimal(10, 2)
   fecha_entrega_estimada  DateTime?
   created_at              DateTime @default(now())
 }
@@ -89,9 +88,9 @@ model Invoice {
   clienteId               String
   cliente                 Customer @relation(fields: [clienteId], references: [id])
   cliente_datos_respaldo  Json     // Respaldo de datos al momento de emisión
-  igv_total               Float
-  total_venta             Float
-  ubl_xml                 String?  
+  igv_total               Decimal  @db.Decimal(10, 2)
+  total_venta             Decimal  @db.Decimal(10, 2)
+  ubl_xml                 String?  @db.Text
   hash_sunat              String?
   estado_sunat            String   @default("PENDIENTE")
   created_at              DateTime @default(now())
