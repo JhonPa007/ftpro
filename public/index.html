@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTPRO | Sistema de Gestión Móvil</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav>
+        <h1><i class="fas fa-mobile-alt"></i> FTPRO</h1>
+        <div class="nav-link active" onclick="showModule('dashboard')">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </div>
+        <div class="nav-link" onclick="showModule('pos')">
+            <i class="fas fa-shopping-cart"></i> Punto de Venta
+        </div>
+        <div class="nav-link" onclick="showModule('inventory')">
+            <i class="fas fa-boxes"></i> Inventario
+        </div>
+        <div class="nav-link" onclick="showModule('support')">
+            <i class="fas fa-tools"></i> Servicio Técnico
+        </div>
+        <div class="nav-link" onclick="showModule('crm')">
+            <i class="fas fa-users"></i> Clientes (CRM)
+        </div>
+        
+        <div style="margin-top: auto; padding: 1rem; font-size: 0.7rem; color: #555;">
+            v1.2.0 | Producción Ready
+        </div>
+    </nav>
+
+    <main>
+        <!-- DASHBOARD MODULE -->
+        <section id="module-dashboard">
+            <header>
+                <h2>Panel de Control</h2>
+                <div id="real-time-clock">Cargando fecha...</div>
+            </header>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Ventas del Día</h3>
+                    <div class="value" id="stat-daily-sales">S/ 0.00</div>
+                    <p style="color: var(--success); font-size: 0.8rem; margin-top: 5px;">+12% vs ayer</p>
+                </div>
+                <div class="card">
+                    <h3>Equipos en Almacén</h3>
+                    <div class="value" id="stat-stock-count">-</div>
+                    <p style="color: var(--text-primary); font-size: 0.8rem; margin-top: 5px;">32% en Almacén A</p>
+                </div>
+                <div class="card">
+                    <h3>Reparaciones Activas</h3>
+                    <div class="value" id="stat-support-count">0</div>
+                    <p style="color: var(--neon); font-size: 0.8rem; margin-top: 5px;">3 pendientes de entrega</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h3>Alertas de Stock Bajo (SGA)</h3>
+                <table id="table-inventory-alerts">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>SKU</th>
+                            <th>Actual</th>
+                            <th>Mínimo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- POS MODULE -->
+        <section id="module-pos" style="display: none;">
+            <header>
+                <h2>Terminal de Punto de Venta</h2>
+            </header>
+            <div class="pos-container">
+                <div class="card">
+                    <h3>Nueva Venta</h3>
+                    <div class="form-group">
+                        <label>Buscar Producto</label>
+                        <select id="pos-product-list">
+                            <option value="">Seleccione un equipo...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Escanear IMEI / Serie</label>
+                        <input type="text" id="pos-imei" placeholder="Escanee código de barras...">
+                    </div>
+                    <hr style="border: 0.5px solid var(--glass); margin-bottom: 1.5rem;">
+                    <h3>Datos del Cliente</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                        <select id="pos-client-type">
+                            <option value="1">DNI</option>
+                            <option value="6">RUC</option>
+                        </select>
+                        <input type="text" id="pos-client-doc" placeholder="Número de documento">
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <input type="text" id="pos-client-name" placeholder="Nombre completo / Razón social">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Resumen de Pago</h3>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>Subtotal</span>
+                        <span id="pos-subtotal">S/ 0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>IGV (18%)</span>
+                        <span id="pos-igv">S/ 0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.5rem; margin: 2rem 0; color: var(--neon);">
+                        <span>TOTAL</span>
+                        <span id="pos-total">S/ 0.00</span>
+                    </div>
+                    <button style="width: 100%;" onclick="executeSale()">EMITIR COMPROBANTE</button>
+                    <p style="font-size: 0.7rem; color: #555; text-align: center; margin-top: 10px;">
+                        Facturación electrónica vinculada directamente a SUNAT.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

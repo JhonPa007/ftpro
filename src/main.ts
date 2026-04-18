@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static('public'));
 
 // Endpoint de Punto de Venta (POS)
 app.post('/api/sales/pos', createSale);
