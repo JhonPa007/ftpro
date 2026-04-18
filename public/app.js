@@ -24,10 +24,8 @@ function showModule(moduleId) {
         if (el) el.style.display = 'none';
         document.querySelector(`.nav-link[onclick*="${m}"]`)?.classList.remove('active');
     });
-
     document.getElementById(`module-${moduleId}`).style.display = 'block';
     document.querySelector(`.nav-link[onclick*="${moduleId}"]`)?.classList.add('active');
-
     if (moduleId === 'dashboard') updateDashboardStats();
     if (moduleId === 'inventory') loadInventory();
 }
@@ -40,13 +38,12 @@ function switchTab(tabId) {
     });
     document.getElementById(`tab-${tabId}`).style.display = 'block';
     document.querySelector(`.tab-link[onclick*="${tabId}"]`)?.classList.add('active');
-
     if (tabId === 'providers') loadProviders();
     if (tabId === 'catalog') loadInventory();
 }
 
 /**
- * MASTER DATA & PROVIDERS
+ * MASTER DATA MANAGEMENT
  */
 async function openConfigModal() {
     document.getElementById('modal-config').style.display = 'flex';
@@ -57,25 +54,67 @@ async function refreshMasterLists() {
     const res = await fetch('/api/inventory/master');
     const { categories, brands, attributes } = await res.json();
 
-    renderList('cfg-cat-list', categories);
-    renderList('cfg-brand-list', brands);
-    renderChips('cfg-attr-list', attributes);
+    renderMasterList('cfg-cat-list', categories, 'categories');
+    renderMasterList('cfg-brand-list', brands, 'brands');
+    renderMasterList('cfg-attr-list', attributes, 'attributes');
 
-    fillSelect('prod-category', categories);
-    fillSelect('prod-brand', brands);
-    renderAttrSelector('prod-attributes-container', attributes);
+    // Cargar solo activos en los selectores
+    const resActive = await fetch('/api/inventory/master?active=true');
+    const activeData = await resActive.json();
+    fillSelect('prod-category', activeData.categories);
+    fillSelect('prod-brand', activeData.brands);
+    renderAttrSelector('prod-attributes-container', activeData.attributes);
 }
 
-function renderList(id, items) {
+function renderMasterList(id, items, type) {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = items.map(i => `<li>${i.nombre}</li>`).join('');
+    if (!el) return;
+    el.innerHTML = items.map(i => `
+        <li style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass); opacity: ${i.activo ? 1 : 0.4};">
+            <span>${i.nombre}</span>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="editMaster('${type}', '${i.id}', '${i.nombre}')" class="btn-micro" title="Editar"><i class="fas fa-edit"></i></button>
+                <button onclick="toggleMaster('${type}', '${i.id}', ${i.activo})" class="btn-micro" title="${i.activo ? 'Desactivar' : 'Activar'}">
+                    <i class="fas ${i.activo ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
 }
 
-function renderChips(id, items) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = items.map(i => `<span class="status-badge" style="background: var(--glass);">${i.nombre}</span>`).join('');
+async function editMaster(type, id, currentName) {
+    const newName = prompt('Ingrese el nuevo nombre:', currentName);
+    if (!newName || newName === currentName) return;
+    await fetch(`/api/inventory/${type}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newName })
+    });
+    refreshMasterLists();
 }
 
+async function toggleMaster(type, id, currentStatus) {
+    await fetch(`/api/inventory/${type}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: !currentStatus })
+    });
+    refreshMasterLists();
+}
+
+async function saveMaster(type, inputId) {
+    const name = document.getElementById(inputId).value;
+    if (!name) return;
+    await fetch(`/api/inventory/${type}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: name })
+    });
+    document.getElementById(inputId).value = '';
+    refreshMasterLists();
+}
+
+// DROPDOWNS & ATTRS
 function fillSelect(id, items) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '<option value="">Seleccione...</option>' +
@@ -93,41 +132,36 @@ function renderAttrSelector(id, items) {
     `).join('');
 }
 
-async function saveMaster(type, inputId) {
-    const name = document.getElementById(inputId).value;
-    if (!name) return;
-    await fetch(`/api/inventory/${type}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: name })
-    });
-    document.getElementById(inputId).value = '';
-    refreshMasterLists();
-}
-
 /**
- * PROVIDER LOGIC
+ * PROVIDERS
  */
-function openNewProviderModal() {
-    document.getElementById('modal-provider').style.display = 'flex';
-}
-
 async function loadProviders() {
     const res = await fetch('/api/inventory/providers');
     const providers = await res.json();
     const tbody = document.getElementById('provider-list-body');
     if (tbody) tbody.innerHTML = providers.map(p => `
-        <tr>
+        <tr style="opacity: ${p.activo ? 1 : 0.4};">
             <td>${p.ruc}</td>
             <td>${p.nombre}</td>
             <td>${p.contacto || '-'}</td>
-            <td>${p.telefono || '-'}</td>
+            <td>
+                <button onclick="toggleProvider('${p.id}', ${p.activo})" class="btn-micro"><i class="fas ${p.activo ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+            </td>
         </tr>
     `).join('');
 }
 
+async function toggleProvider(id, current) {
+    await fetch(`/api/inventory/providers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: !current })
+    });
+    loadProviders();
+}
+
 /**
- * INVENTORY LOGIC
+ * INVENTORY & STOCK
  */
 async function loadInventory() {
     const res = await fetch('/api/inventory/products');
@@ -145,27 +179,8 @@ async function loadInventory() {
     `).join('');
 }
 
-function openNewProductModal() {
-    document.getElementById('modal-product').style.display = 'flex';
-    refreshMasterLists();
-}
-
-function closeProductModal() {
-    document.getElementById('modal-product').style.display = 'none';
-}
-
-/**
- * STATS
- */
-async function updateDashboardStats() {
-    const res = await fetch('/api/reports/daily-sales');
-    const data = await res.json();
-    const el = document.getElementById('stat-daily-sales');
-    if (el) el.innerText = `S/ ${(data.total_ingresos || 0).toFixed(2)}`;
-}
-
 function initFormListeners() {
-    // FORM PRODUCTO
+    // ... same as before
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const attributes = [];
@@ -173,7 +188,6 @@ function initFormListeners() {
             const val = document.getElementById(`val-${chk.value}`).value;
             if (val) attributes.push({ id: chk.value, valor: val });
         });
-
         const payload = {
             sku: document.getElementById('prod-sku').value,
             nombre: document.getElementById('prod-name').value,
@@ -183,16 +197,14 @@ function initFormListeners() {
             precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
             stock_minimo: 5, requiere_imei: true, attributes
         };
-
         const res = await fetch('/api/inventory/products', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (res.ok) { alert('Producto guardado'); closeProductModal(); loadInventory(); }
+        if (res.ok) { alert('Producto guardado'); document.getElementById('modal-product').style.display = 'none'; loadInventory(); }
     });
 
-    // FORM PROVEEDOR
     document.getElementById('form-new-provider')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const payload = {
@@ -204,15 +216,8 @@ function initFormListeners() {
         const res = await fetch('/api/inventory/providers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.json(payload)
         });
-        if (res.ok) {
-            alert('Proveedor registrado');
-            document.getElementById('modal-provider').style.display = 'none';
-            loadProviders();
-        } else {
-            const err = await res.json();
-            alert(err.error);
-        }
+        if (res.ok) { alert('Proveedor registrado'); document.getElementById('modal-provider').style.display = 'none'; loadProviders(); }
     });
 }

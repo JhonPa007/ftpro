@@ -9,28 +9,49 @@ export class InventoryService {
         return await prisma.categoria.create({ data: { nombre, descripcion } });
     }
 
+    async updateCategory(id: string, data: { nombre?: string; activo?: boolean }) {
+        return await prisma.categoria.update({ where: { id }, data });
+    }
+
     async createBrand(nombre: string) {
         return await prisma.marca.create({ data: { nombre } });
+    }
+
+    async updateBrand(id: string, data: { nombre?: string; activo?: boolean }) {
+        return await prisma.marca.update({ where: { id }, data });
     }
 
     async createAttribute(nombre: string) {
         return await prisma.caracteristica.create({ data: { nombre } });
     }
 
-    async getAllCategories() {
-        return await prisma.categoria.findMany({ orderBy: { nombre: 'asc' } });
+    async updateAttribute(id: string, data: { nombre?: string; activo?: boolean }) {
+        return await prisma.caracteristica.update({ where: { id }, data });
     }
 
-    async getAllBrands() {
-        return await prisma.marca.findMany({ orderBy: { nombre: 'asc' } });
+    async getAllCategories(onlyActive = false) {
+        return await prisma.categoria.findMany({
+            where: onlyActive ? { activo: true } : {},
+            orderBy: { nombre: 'asc' }
+        });
     }
 
-    async getAllAttributes() {
-        return await prisma.caracteristica.findMany({ orderBy: { nombre: 'asc' } });
+    async getAllBrands(onlyActive = false) {
+        return await prisma.marca.findMany({
+            where: onlyActive ? { activo: true } : {},
+            orderBy: { nombre: 'asc' }
+        });
+    }
+
+    async getAllAttributes(onlyActive = false) {
+        return await prisma.caracteristica.findMany({
+            where: onlyActive ? { activo: true } : {},
+            orderBy: { nombre: 'asc' }
+        });
     }
 
     /**
-     * CATÁLOGO: PRODUCTO ESTRUCTURADO
+     * CATÁLOGO Y STOCK
      */
     async createProduct(data: {
         sku: string;
@@ -98,13 +119,20 @@ export class InventoryService {
     }
 
     /**
-     * MÓDULO: PROVEEDORES
+     * PROVEEDORES
      */
     async createProveedor(data: { ruc: string; nombre: string; contacto?: string; telefono?: string }) {
         return await prisma.proveedor.create({ data });
     }
 
-    async getAllProveedores() {
-        return await prisma.proveedor.findMany({ orderBy: { nombre: 'asc' } });
+    async updateProveedor(id: string, data: { nombre?: string; activo?: boolean; contacto?: string; telefono?: string }) {
+        return await prisma.proveedor.update({ where: { id }, data });
+    }
+
+    async getAllProveedores(onlyActive = false) {
+        return await prisma.proveedor.findMany({
+            where: onlyActive ? { activo: true } : {},
+            orderBy: { nombre: 'asc' }
+        });
     }
 }

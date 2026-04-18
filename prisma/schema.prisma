@@ -30,6 +30,7 @@ model Categoria {
   id          String   @id @default(uuid())
   nombre      String   @unique
   descripcion String?
+  activo      Boolean  @default(true)
   productos   Producto[]
   @@map("categorias")
 }
@@ -37,14 +38,16 @@ model Categoria {
 model Marca {
   id          String   @id @default(uuid())
   nombre      String   @unique
+  activo      Boolean  @default(true)
   productos   Producto[]
   @@map("marcas")
 }
 
 model Caracteristica {
   id          String   @id @default(uuid())
-  nombre      String   @unique // Ej: RAM, Color
+  nombre      String   @unique 
   tipo        String   @default("TEXTO")
+  activo      Boolean  @default(true)
   valores     ProductoCaracteristica[]
   @@map("caracteristicas")
 }
@@ -87,6 +90,7 @@ model Proveedor {
   nombre      String
   contacto    String?
   telefono    String?
+  activo      Boolean  @default(true)
   compras     Compra[]
   @@map("proveedores")
 }

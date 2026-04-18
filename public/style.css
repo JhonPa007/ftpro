@@ -277,3 +277,23 @@ td {
     transform: scale(1.05);
     box-shadow: 0 0 15px var(--neon);
 }
+
+.btn-micro {
+    background: var(--glass);
+    border: none;
+    color: #8B949E;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.btn-micro:hover {
+    background: var(--neon);
+    color: #000;
+}

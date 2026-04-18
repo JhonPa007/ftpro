@@ -29,11 +29,17 @@ app.get('/api/crm/customers/:numeroDoc/history', crmController.getHistory);
 // Endpoints de Inventario
 app.get('/api/inventory/master', inventoryController.getMasterData);
 app.post('/api/inventory/categories', inventoryController.createCategory);
+app.patch('/api/inventory/categories/:id', inventoryController.updateCategory);
+
 app.post('/api/inventory/brands', inventoryController.createBrand);
+app.patch('/api/inventory/brands/:id', inventoryController.updateBrand);
+
 app.post('/api/inventory/attributes', inventoryController.createAttribute);
+app.patch('/api/inventory/attributes/:id', inventoryController.updateAttribute);
 
 app.get('/api/inventory/providers', inventoryController.listProviders);
 app.post('/api/inventory/providers', inventoryController.createProvider);
+app.patch('/api/inventory/providers/:id', inventoryController.updateProvider);
 
 app.get('/api/inventory/products', inventoryController.listProducts);
 app.post('/api/inventory/products', inventoryController.createProduct);
