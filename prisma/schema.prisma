@@ -1,0 +1,98 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// 0. Clientes (CRM)
+model Customer {
+  id              String   @id @default(uuid())
+  tipo_documento  String   // 1: DNI, 6: RUC, 4: CE, 7: Pasaporte
+  numero_documento String   @unique
+  nombre          String
+  telefono        String?
+  email           String?
+  direccion       String?
+  created_at      DateTime @default(now())
+
+  invoices        Invoice[]
+  serviceOrders   ServiceOrder[]
+}
+
+// 1. Catálogo General de Productos
+model Product {
+  id              String   @id @default(uuid())
+  sku             String   @unique
+  nombre          String
+  categoria       String   // Celulares, Accesorios, Repuestos
+  precios         Json     // {"retail": 0, "wholesale": 0, "min_price": 0}
+  especificaciones Json?    // Características técnicas dinámicas
+  stock_minimo    Int      @default(5)
+  stock_maximo    Int      @default(100)
+  clasificacion_abc String? // A, B, C
+  requiere_imei   Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  items           StockItem[]
+}
+
+// 2. Inventario de Unidades Únicas (Trazabilidad IMEI/ICCID)
+model StockItem {
+  id                      String   @id @default(uuid())
+  productId               String
+  product                 Product  @relation(fields: [productId], references: [id])
+  imei                    String?  @unique
+  iccid                   String?  @unique
+  estado_dispositivo      String   // Nuevo, Usado, Refurbished
+  estado_inventario       String   // Disponible, Vendido, En Reparación, Bloqueado
+  ubicacion_almacen       String?
+  hash_verificacion       String?  // Integridad para OSIPTEL
+  ultima_validacion_renteseg DateTime?
+  created_at              DateTime @default(now())
+}
+
+// 3. Ficha de Internamiento (Servicio Técnico)
+model ServiceOrder {
+  id                      String   @id @default(uuid())
+  numero_orden            Int      @unique 
+
+  clienteId               String
+  cliente                 Customer @relation(fields: [clienteId], references: [id])
+  vendedor_id             String
+  tecnico_id              String?
+  
+  imei_equipo             String
+  marca_modelo            String
+  estado_fisico_detallado Json
+  inventario_accesorios   Json
+  
+  falla_reportada         String
+  diagnostico_inicial     String?
+  estado_servicio         String   @default("RECIBIDO") // RECIBIDO, DIAGNOSTICADO, REPARADO, ENTREGADO
+  
+  presupuesto_estimado    Float? 
+  adelanto                Float    @default(0)
+  fecha_entrega_estimada  DateTime?
+  created_at              DateTime @default(now())
+}
+
+// 4. Facturación Electrónica
+model Invoice {
+  id                      String   @id @default(uuid())
+  tipo_documento          String   // 01 Factura, 03 Boleta, 09 GRE
+  serie_correlativo       String   @unique
+  clienteId               String
+  cliente                 Customer @relation(fields: [clienteId], references: [id])
+  cliente_datos_respaldo  Json     // Respaldo de datos al momento de emisión
+  igv_total               Float
+  total_venta             Float
+  ubl_xml                 String?  
+  hash_sunat              String?
+  estado_sunat            String   @default("PENDIENTE")
+  created_at              DateTime @default(now())
+}
