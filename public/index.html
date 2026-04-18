@@ -137,7 +137,13 @@
         <section id="module-inventory" style="display: none;">
             <header>
                 <h2>Gestión de Inventario</h2>
-                <button onclick="alert('Funcionalidad de Nuevo Producto próximamente')">+ Nuevo Producto</button>
+                <div>
+                    <button onclick="openNewProductModal()" style="margin-right: 10px;">+ Nuevo Producto</button>
+                    <button onclick="openStockEntryModal()"
+                        style="background: var(--bg-main); border: 1px solid var(--neon); color: var(--neon);">
+                        <i class="fas fa-truck-loading"></i> Entrada de Stock
+                    </button>
+                </div>
             </header>
             <div class="card">
                 <h3>Catálogo de Productos</h3>
@@ -198,7 +204,6 @@
                 <div id="dynamic-specs" class="card"
                     style="background: #0d1117; margin-bottom: 1rem; border-color: var(--neon);">
                     <p style="font-size: 0.8rem; color: #555;">Seleccione una categoría para ver especificaciones...</p>
-                    <!-- Campos dinámicos aquí -->
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
@@ -223,6 +228,45 @@
                     <button type="button" onclick="closeProductModal()"
                         style="background: #333; flex: 1;">Cancelar</button>
                     <button type="submit" style="flex: 2;">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ENTRADA DE MERCADERÍA -->
+    <div id="modal-stock-entry" class="modal" style="display: none;">
+        <div class="modal-content card">
+            <h2><i class="fas fa-truck-loading"></i> Entrada de Stock (IMEIs)</h2>
+            <form id="form-stock-entry">
+                <div class="form-group">
+                    <label>Producto</label>
+                    <select id="stock-product-id" required>
+                        <option value="">Cargando catálogo...</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select id="stock-item-state">
+                            <option value="Nuevo">Nuevo</option>
+                            <option value="Usado">Usado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ubicación</label>
+                        <input type="text" id="stock-location" placeholder="Almacén A / Vitrina" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Lista de IMEIs (uno por línea)</label>
+                    <textarea id="stock-imei-list" rows="8"
+                        style="width: 100%; background: #0D1117; color: var(--neon); padding: 10px; font-family: monospace;"
+                        required></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="closeStockEntryModal()"
+                        style="background: #333; flex: 1;">Cerrar</button>
+                    <button type="submit" style="flex: 2;">Registrar Ingreso</button>
                 </div>
             </form>
         </div>

@@ -27,6 +27,7 @@ app.post('/api/crm/customers', crmController.upsertCustomer);
 app.get('/api/crm/customers/:numeroDoc/history', crmController.getHistory);
 
 // Endpoints de Inventario
+app.get('/api/inventory/products', inventoryController.getAllProducts);
 app.post('/api/inventory/products', inventoryController.createProduct);
 app.post('/api/inventory/stock', inventoryController.addStock);
 app.get('/api/inventory/imei/:imei', inventoryController.lookupImei);

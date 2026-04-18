@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboardStats();
     updateClock();
     setInterval(updateClock, 1000);
+    initFormListeners();
 });
 
 function updateClock() {
@@ -36,7 +37,6 @@ function showModule(moduleId) {
         activeModule.style.display = 'block';
     }
 
-    // Actualizar estado de los links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
         if (link.innerText.toLowerCase().includes(moduleId)) {
@@ -46,10 +46,11 @@ function showModule(moduleId) {
 
     if (moduleId === 'dashboard') updateDashboardStats();
     if (moduleId === 'inventory') loadInventory();
+    if (moduleId === 'pos') loadPosProducts();
 }
 
 /**
- * Llamadas a la API Backend
+ * DASHBOARD STATS
  */
 async function updateDashboardStats() {
     try {
@@ -75,17 +76,15 @@ async function updateDashboardStats() {
                 tbody.appendChild(tr);
             });
         }
-    } catch (error) {
-        console.error('Error cargando estadísticas:', error);
-    }
+    } catch (error) { console.error(error); }
 }
 
 /**
- * Carga visual del inventario
+ * INVENTORY LOGIC
  */
 async function loadInventory() {
     try {
-        const res = await fetch('/api/reports/inventory-alerts');
+        const res = await fetch('/api/inventory/products');
         const products = await res.json();
         const tbody = document.getElementById('inventory-list-body');
         if (tbody) {
@@ -96,60 +95,14 @@ async function loadInventory() {
                     <td>${p.sku}</td>
                     <td>${p.nombre}</td>
                     <td>${p.stock_minimo}</td>
-                    <td><button onclick="alert('Funcionalidad de edición en desarrollo para SKU: ${p.sku}')">Editar</button></td>
+                    <td><button onclick="alert('SKU: ${p.sku}')">Detalles</button></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
-    } catch (e) {
-        console.error('Error cargando inventario:', e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-/**
- * Lógica del Punto de Venta (POS)
- */
-async function executeSale() {
-    const data = {
-        productId: document.getElementById('pos-product-list')?.value,
-        imei: document.getElementById('pos-imei')?.value,
-        cliente: {
-            tipoDoc: document.getElementById('pos-client-type')?.value,
-            numeroDoc: document.getElementById('pos-client-doc')?.value,
-            nombre: document.getElementById('pos-client-name')?.value
-        },
-        paymentMethod: 'Efectivo'
-    };
-
-    if (!data.productId || !data.imei || !data.cliente.numeroDoc) {
-        alert('Por favor complete los campos obligatorios.');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/sales/pos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.error) {
-            alert(`Error: ${result.error}`);
-        } else {
-            alert(`¡VENTA EXITOSA!\nComprobante: ${result.comprobante}\nMonto: S/ ${result.total}`);
-            updateDashboardStats();
-            showModule('dashboard');
-        }
-    } catch (error) {
-        alert('Error conectando con el servidor.');
-    }
-}
-
-/**
- * Lógica de Modal e Inventario Dinámico
- */
 function openNewProductModal() {
     document.getElementById('modal-product').style.display = 'flex';
 }
@@ -164,78 +117,120 @@ function toggleCategoryFields() {
     const autoImei = document.getElementById('prod-requires-imei');
 
     container.innerHTML = '';
-
     if (category === 'Celulares') {
         autoImei.value = 'true';
-        container.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="text" id="spec-ram" placeholder="RAM (ej: 8GB)">
-                <input type="text" id="spec-storage" placeholder="Almacenamiento (ej: 256GB)">
-                <input type="text" id="spec-cpu" placeholder="Procesador">
-                <input type="text" id="spec-screen" placeholder="Pantalla (ej: 6.7'')">
-            </div>
-        `;
-    } else if (category === 'Accesorios' || category === 'Repuestos') {
-        autoImei.value = 'false';
-        container.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="text" id="spec-brand" placeholder="Marca Compatible">
-                <input type="text" id="spec-material" placeholder="Material / Tipo">
-            </div>
-        `;
+        container.innerHTML = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="text" id="spec-ram" placeholder="RAM"><input type="text" id="spec-storage" placeholder="Storage">
+            <input type="text" id="spec-cpu" placeholder="CPU"><input type="text" id="spec-screen" placeholder="Pantalla">
+        </div>`;
     } else {
-        container.innerHTML = '<p style="font-size: 0.8rem; color: #555;">Seleccione una categoría...</p>';
+        autoImei.value = 'false';
+        container.innerHTML = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="text" id="spec-brand" placeholder="Marca"><input type="text" id="spec-material" placeholder="Material">
+        </div>`;
     }
 }
 
-// Escuchar el envío del formulario
-setTimeout(() => {
+/**
+ * STOCK ENTRY LOGIC
+ */
+async function openStockEntryModal() {
+    document.getElementById('modal-stock-entry').style.display = 'flex';
+    const res = await fetch('/api/inventory/products');
+    const products = await res.json();
+    const select = document.getElementById('stock-product-id');
+    select.innerHTML = '<option value="">Seleccione producto...</option>';
+    products.forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.nombre} (${p.sku})</option>`;
+    });
+}
+
+function closeStockEntryModal() {
+    document.getElementById('modal-stock-entry').style.display = 'none';
+}
+
+/**
+ * POS LOGIC
+ */
+async function loadPosProducts() {
+    const res = await fetch('/api/inventory/products');
+    const products = await res.json();
+    const select = document.getElementById('pos-product-list');
+    if (select) {
+        select.innerHTML = '<option value="">Buscar equipo...</option>';
+        products.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+        });
+    }
+}
+
+async function executeSale() {
+    const data = {
+        productId: document.getElementById('pos-product-list')?.value,
+        imei: document.getElementById('pos-imei')?.value,
+        cliente: {
+            tipoDoc: document.getElementById('pos-client-type')?.value,
+            numeroDoc: document.getElementById('pos-client-doc')?.value,
+            nombre: document.getElementById('pos-client-name')?.value
+        },
+        paymentMethod: 'Efectivo'
+    };
+
+    try {
+        const res = await fetch('/api/sales/pos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.error) alert(result.error);
+        else {
+            alert(`Venta OK: ${result.comprobante}`);
+            showModule('dashboard');
+        }
+    } catch (e) { alert('Error'); }
+}
+
+/**
+ * LISTENERS
+ */
+function initFormListeners() {
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const category = document.getElementById('prod-category').value;
-        let specs = {};
-        if (category === 'Celulares') {
-            specs = {
-                ram: document.getElementById('spec-ram')?.value,
-                almacenamiento: document.getElementById('spec-storage')?.value,
-                procesador: document.getElementById('spec-cpu')?.value,
-                pantalla: document.getElementById('spec-screen')?.value
-            };
-        } else {
-            specs = {
-                marca: document.getElementById('spec-brand')?.value,
-                material: document.getElementById('spec-material')?.value
-            };
-        }
-
         const payload = {
             sku: document.getElementById('prod-sku').value,
             nombre: document.getElementById('prod-name').value,
-            categoria: category,
+            categoria: document.getElementById('prod-category').value,
             precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
-            especificaciones: specs,
             stock_minimo: parseInt(document.getElementById('prod-stock-min').value),
             requiere_imei: document.getElementById('prod-requires-imei').value === 'true'
         };
-
-        try {
-            const response = await fetch('/api/inventory/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                alert('¡Producto creado exitosamente!');
-                closeProductModal();
-                loadInventory();
-            } else {
-                const err = await response.json();
-                alert(`Error: ${err.error}`);
-            }
-        } catch (error) {
-            alert('Error conectando al servidor.');
-        }
+        const res = await fetch('/api/inventory/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) { closeProductModal(); loadInventory(); }
     });
-}, 500);
+
+    document.getElementById('form-stock-entry')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const imeiText = document.getElementById('stock-imei-list').value;
+        const imeis = imeiText.split('\n').filter(i => i.trim() !== '');
+        const payload = {
+            productId: document.getElementById('stock-product-id').value,
+            items: imeis.map(i => ({
+                imei: i.trim(),
+                estado_dispositivo: document.getElementById('stock-item-state').value,
+                ubicacion: document.getElementById('stock-location').value
+            }))
+        };
+        const res = await fetch('/api/inventory/stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) { alert('Carga exitosa'); closeStockEntryModal(); loadInventory(); }
+        else { const err = await res.json(); alert(err.error); }
+    });
+}
