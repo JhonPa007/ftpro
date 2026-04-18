@@ -153,7 +153,7 @@ function updateClock() {
 }
 
 function showModule(moduleId) {
-    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm'];
+    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
         if (el) el.style.display = 'none';
