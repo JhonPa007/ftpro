@@ -1,18 +1,24 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 import { createSale } from './modules/sales/sales.controller.js';
 import * as reportsController from './modules/reports/reports.controller.js';
 import * as crmController from './modules/crm/crm.controller.js';
-import * as inventoryController from './modules/inventory/inventory.controller.js';
+import inventoryController from './modules/inventory/inventory.controller.js';
+import configController from './modules/config/config.controller.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+app.use('/api/inventory', inventoryController);
+app.use('/api/config', configController);
 
 // Endpoint de Punto de Venta (POS)
 app.post('/api/sales/pos', createSale);
