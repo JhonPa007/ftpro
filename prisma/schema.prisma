@@ -9,8 +9,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 0. CRM & CORE
-model Customer {
+// 1. CRM Y CLIENTES
+model Cliente {
   id               String   @id @default(uuid())
   tipo_documento   String   
   numero_documento String   @unique
@@ -20,106 +20,106 @@ model Customer {
   direccion        String?
   created_at       DateTime @default(now())
 
-  invoices        Invoice[]
-  serviceOrders   ServiceOrder[]
+  facturas        Factura[]
+  ordenesServicio OrdenServicio[]
   @@map("clientes")
 }
 
-// 1. CONFIGURACIÓN DE INVENTARIO (MAESTROS)
-model Category {
+// 2. CONFIGURACIÓN DE INVENTARIO (MAESTROS)
+model Categoria {
   id          String   @id @default(uuid())
   nombre      String   @unique
   descripcion String?
-  products    Product[]
+  productos   Producto[]
   @@map("categorias")
 }
 
-model Brand {
+model Marca {
   id          String   @id @default(uuid())
   nombre      String   @unique
-  products    Product[]
+  productos   Producto[]
   @@map("marcas")
 }
 
-model Attribute {
+model Caracteristica {
   id          String   @id @default(uuid())
-  nombre      String   @unique // Ej: RAM, Almacenamiento, Color
-  tipo        String   @default("TEXTO") // TEXTO, NUMERICO
-  values      ProductAttribute[]
+  nombre      String   @unique // Ej: RAM, Color
+  tipo        String   @default("TEXTO")
+  valores     ProductoCaracteristica[]
   @@map("caracteristicas")
 }
 
-// 2. CATÁLOGO DE PRODUCTOS
-model Product {
+// 3. CATÁLOGO DE PRODUCTOS
+model Producto {
   id                String   @id @default(uuid())
   sku               String   @unique
   nombre            String
-  categoryId        String
-  category          Category @relation(fields: [categoryId], references: [id])
-  brandId           String
-  brand             Brand    @relation(fields: [brandId], references: [id])
+  categoriaId       String
+  categoria         Categoria @relation(fields: [categoriaId], references: [id])
+  marcaId           String
+  marca             Marca    @relation(fields: [marcaId], references: [id])
   
-  precios           Json     // { "retail": 0, "wholesale": 0 }
+  precios           Json     
   precio_compra     Decimal  @db.Decimal(10, 2)
   stock_minimo      Int      @default(5)
   requiere_imei     Boolean  @default(false)
   created_at        DateTime @default(now())
 
-  items             StockItem[]
-  attributes        ProductAttribute[]
+  unidades          ItemInventario[]
+  caracteristicas   ProductoCaracteristica[]
   @@map("productos")
 }
 
-model ProductAttribute {
-  id          String    @id @default(uuid())
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id])
-  attributeId String
-  attribute   Attribute @relation(fields: [attributeId], references: [id])
-  valor       String    // El valor real: ej "8GB", "Negro"
+model ProductoCaracteristica {
+  id               String    @id @default(uuid())
+  productoId       String
+  producto         Producto   @relation(fields: [productoId], references: [id])
+  caracteristicaId String
+  caracteristica   Caracteristica @relation(fields: [caracteristicaId], references: [id])
+  valor            String    
   @@map("productos_caracteristicas")
 }
 
-// 3. COMPRAS Y PROVEEDORES
-model Provider {
+// 4. COMPRAS Y PROVEEDORES
+model Proveedor {
   id          String   @id @default(uuid())
   ruc         String   @unique
   nombre      String
   contacto    String?
   telefono    String?
-  purchases   Purchase[]
+  compras     Compra[]
   @@map("proveedores")
 }
 
-model Purchase {
+model Compra {
   id              String   @id @default(uuid())
   numero_factura  String   @unique
-  providerId      String
-  provider        Provider @relation(fields: [providerId], references: [id])
+  proveedorId      String
+  proveedor        Proveedor @relation(fields: [proveedorId], references: [id])
   total_compra    Decimal  @db.Decimal(10, 2)
   fecha_compra    DateTime @default(now())
-  items           PurchaseItem[]
+  detalles        DetalleCompra[]
   @@map("compras")
 }
 
-model PurchaseItem {
+model DetalleCompra {
   id          String   @id @default(uuid())
-  purchaseId  String
-  purchase    Purchase @relation(fields: [purchaseId], references: [id])
-  productId   String
+  compraId    String
+  compra      Compra   @relation(fields: [compraId], references: [id])
+  productoId  String
   cantidad    Int
   precio_unit Decimal  @db.Decimal(10, 2)
-  stockItems  StockItem[]
-  @@map("compras_items")
+  unidades    ItemInventario[]
+  @@map("compras_detalles")
 }
 
-// 4. MOVIMIENTOS Y UNIDADES
-model StockItem {
+// 5. UNIDADES FÍSICAS
+model ItemInventario {
   id                String   @id @default(uuid())
-  productId         String
-  product           Product  @relation(fields: [productId], references: [id])
-  purchaseItemId    String?
-  purchaseItem      PurchaseItem? @relation(fields: [purchaseItemId], references: [id])
+  productoId         String
+  producto           Producto  @relation(fields: [productoId], references: [id])
+  detalleCompraId    String?
+  detalleCompra      DetalleCompra? @relation(fields: [detalleCompraId], references: [id])
   
   imei              String?  @unique
   iccid             String?  @unique
@@ -128,12 +128,12 @@ model StockItem {
   @@map("items_inventario")
 }
 
-// 5. OPERACIONES (VENTAS Y SOPORTE)
-model ServiceOrder {
+// 6. OPERACIONES
+model OrdenServicio {
   id                        String   @id @default(uuid())
   numero_orden              Int      @unique @default(autoincrement())
   clienteId                 String
-  cliente                   Customer @relation(fields: [clienteId], references: [id])
+  cliente                   Cliente @relation(fields: [clienteId], references: [id])
   imei_equipo               String
   marca_modelo              String
   estado_servicio           String   @default("RECIBIDO")
@@ -143,12 +143,12 @@ model ServiceOrder {
   @@map("ordenes_servicio")
 }
 
-model Invoice {
+model Factura {
   id                      String   @id @default(uuid())
   tipo_documento          String
   serie_correlativo       String   @unique
   clienteId               String
-  cliente                 Customer @relation(fields: [clienteId], references: [id])
+  cliente                 Cliente @relation(fields: [clienteId], references: [id])
   igv_total               Decimal  @db.Decimal(10, 2)
   total_venta             Decimal  @db.Decimal(10, 2)
   created_at              DateTime @default(now())
