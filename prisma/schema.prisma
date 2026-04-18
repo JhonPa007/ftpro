@@ -11,87 +11,94 @@ datasource db {
 
 // 0. Clientes (CRM)
 model Customer {
-  id              String   @id @default(uuid())
-  tipo_documento  String   // 1: DNI, 6: RUC, 4: CE, 7: Pasaporte
+  id               String   @id @default(uuid())
+  tipo_documento   String   
   numero_documento String   @unique
-  nombre          String
-  telefono        String?
-  email           String?
-  direccion       String?
-  created_at      DateTime @default(now())
+  nombre           String
+  telefono         String?
+  email            String?
+  direccion        String?
+  created_at       DateTime @default(now())
 
   invoices        Invoice[]
   serviceOrders   ServiceOrder[]
+
+  @@map("clientes")
 }
 
 // 1. Catálogo General de Productos
 model Product {
-  id              String   @id @default(uuid())
-  sku             String   @unique
-  nombre          String
-  categoria       String   // Celulares, Accesorios, Repuestos
-  precios         Json     // {"retail": 0, "wholesale": 0, "min_price": 0}
-  especificaciones Json?    // Características técnicas dinámicas
-  stock_minimo    Int      @default(5)
-  stock_maximo    Int      @default(100)
-  clasificacion_abc String? // A, B, C
-  requiere_imei   Boolean  @default(false)
-  created_at      DateTime @default(now())
+  id                String   @id @default(uuid())
+  sku               String   @unique
+  nombre            String
+  categoria         String
+  precios           Json
+  especificaciones  Json?
+  stock_minimo      Int      @default(5)
+  stock_maximo      Int      @default(100)
+  clasificacion_abc String?
+  requiere_imei     Boolean  @default(false)
+  created_at        DateTime @default(now())
 
   items           StockItem[]
+
+  @@map("productos")
 }
 
-// 2. Inventario de Unidades Únicas (Trazabilidad IMEI/ICCID)
+// 2. Inventario de Unidades Únicas
 model StockItem {
-  id                      String   @id @default(uuid())
-  productId               String
-  product                 Product  @relation(fields: [productId], references: [id])
-  imei                    String?  @unique
-  iccid                   String?  @unique
-  estado_dispositivo      String   // Nuevo, Usado, Refurbished
-  estado_inventario       String   // Disponible, Vendido, En Reparación, Bloqueado
-  ubicacion_almacen       String?
-  hash_verificacion       String?  // Integridad para OSIPTEL
+  id                        String   @id @default(uuid())
+  productId                 String
+  product                   Product  @relation(fields: [productId], references: [id])
+  imei                      String?  @unique
+  iccid                     String?  @unique
+  estado_dispositivo        String
+  estado_inventario         String
+  ubicacion_almacen         String?
+  hash_verificacion         String?
   ultima_validacion_renteseg DateTime?
-  created_at              DateTime @default(now())
+  created_at                DateTime @default(now())
+
+  @@map("items_inventario")
 }
 
-// 3. Ficha de Internamiento (Servicio Técnico)
+// 3. Ficha de Internamiento
 model ServiceOrder {
-  id                      String   @id @default(uuid())
-  numero_orden            Int      @unique @default(autoincrement())
-  clienteId               String
-  cliente                 Customer @relation(fields: [clienteId], references: [id])
-  vendedor_id             String
-  tecnico_id              String?
-  
-  imei_equipo             String
-  marca_modelo            String
-  estado_fisico_detallado Json
-  inventario_accesorios   Json
-  
-  falla_reportada         String
-  diagnostico_inicial     String?
-  estado_servicio         String   @default("RECIBIDO") // RECIBIDO, DIAGNOSTICADO, REPARADO, ENTREGADO
-  
-  presupuesto_estimado    Decimal? @db.Decimal(10, 2)
-  adelanto                Decimal  @default(0) @db.Decimal(10, 2)
-  fecha_entrega_estimada  DateTime?
-  created_at              DateTime @default(now())
+  id                        String   @id @default(uuid())
+  numero_orden              Int      @unique @default(autoincrement())
+  clienteId                 String
+  cliente                   Customer @relation(fields: [clienteId], references: [id])
+  vendedor_id               String
+  tecnico_id                String?
+  imei_equipo               String
+  marca_modelo              String
+  estado_fisico_detallado   Json
+  inventario_accesorios     Json
+  falla_reportada           String
+  diagnostico_inicial       String?
+  estado_servicio           String   @default("RECIBIDO")
+  presupuesto_estimado      Decimal? @db.Decimal(10, 2)
+  adelanto                  Decimal  @default(0) @db.Decimal(10, 2)
+  fecha_entrega_estimada    DateTime?
+  created_at                DateTime @default(now())
+
+  @@map("ordenes_servicio")
 }
 
 // 4. Facturación Electrónica
 model Invoice {
   id                      String   @id @default(uuid())
-  tipo_documento          String   // 01 Factura, 03 Boleta, 09 GRE
+  tipo_documento          String
   serie_correlativo       String   @unique
   clienteId               String
   cliente                 Customer @relation(fields: [clienteId], references: [id])
-  cliente_datos_respaldo  Json     // Respaldo de datos al momento de emisión
+  cliente_datos_respaldo  Json
   igv_total               Decimal  @db.Decimal(10, 2)
   total_venta             Decimal  @db.Decimal(10, 2)
   ubl_xml                 String?  @db.Text
   hash_sunat              String?
   estado_sunat            String   @default("PENDIENTE")
   created_at              DateTime @default(now())
+
+  @@map("facturas")
 }
