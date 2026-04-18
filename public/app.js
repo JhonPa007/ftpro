@@ -9,6 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
     initFormListeners();
 
+    // SIDEBAR TOGGLE
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+
+    // Recovery state
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+        sidebar.classList.add('collapsed');
+    }
+
+    toggleBtn?.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+    });
+
     // ESC to close all modals
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {

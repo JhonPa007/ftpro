@@ -13,26 +13,31 @@
 </head>
 
 <body>
-    <aside class="sidebar">
-        <div class="logo">
-            <i class="fas fa-mobile-alt"></i>
-            <span>FTPRO</span>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-mobile-alt"></i>
+                <span>FTPRO</span>
+            </div>
+            <button id="sidebar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
         <nav>
             <a href="#" class="nav-link active" onclick="showModule('dashboard')">
-                <i class="fas fa-th-large"></i> Dashboard
+                <i class="fas fa-th-large"></i> <span>Dashboard</span>
             </a>
             <a href="#" class="nav-link" onclick="showModule('pos')">
-                <i class="fas fa-shopping-cart"></i> Punto de Venta
+                <i class="fas fa-shopping-cart"></i> <span>Punto de Venta</span>
             </a>
             <a href="#" class="nav-link" onclick="showModule('inventory')">
-                <i class="fas fa-boxes"></i> Inventario
+                <i class="fas fa-boxes"></i> <span>Inventario</span>
             </a>
             <a href="#" class="nav-link" onclick="showModule('support')">
-                <i class="fas fa-tools"></i> Servicio Técnico
+                <i class="fas fa-tools"></i> <span>Servicio Técnico</span>
             </a>
             <a href="#" class="nav-link" onclick="showModule('crm')">
-                <i class="fas fa-users"></i> Clientes (CRM)
+                <i class="fas fa-users"></i> <span>Clientes (CRM)</span>
             </a>
         </nav>
         <div class="sidebar-footer">
