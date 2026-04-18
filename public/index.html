@@ -183,8 +183,10 @@
 
     <!-- MODAL: INPUT IMEIs -->
     <div id="modal-imeis" class="modal" style="display: none; z-index: 1001;">
-        <div class="modal-content card" style="max-width: 400px;">
-            <h3>Ingresar IMEIs</h3>
+        <div class="modal-content card" style="max-width: 400px; position: relative;">
+            <span class="close-modal"
+                onclick="document.getElementById('modal-imeis').style.display='none'">&times;</span>
+            <h3 style="margin-top: 10px;">Ingresar IMEIs</h3>
             <p id="imei-product-name" style="font-size: 0.8rem; color: var(--neon);"></p>
             <div id="imeis-container"
                 style="display: flex; flex-direction: column; gap: 5px; max-height: 300px; overflow-y: auto; padding: 10px;">
