@@ -55,6 +55,85 @@
             </div>
         </div>
 
+        <!-- MÓDULO: CONFIGURACIÓN -->
+        <div id="module-config" class="module" style="display: none;">
+            <div class="top-bar">
+                <h2>Configuración del Sistema</h2>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+                <!-- Perfil de Empresa -->
+                <div class="card">
+                    <h3>Perfil de Empresa / Whitelabel</h3>
+                    <form id="form-config-profile" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label>Nombre de la Empresa</label>
+                            <input type="text" id="cfg-app-name" placeholder="Ej: FTPRO Corp">
+                        </div>
+                        <div class="form-group">
+                            <label>RUC de la Empresa</label>
+                            <input type="text" id="cfg-app-ruc" placeholder="Ej: 20600123456">
+                        </div>
+                        <div class="form-group">
+                            <label>URL del Logotipo</label>
+                            <input type="text" id="cfg-app-logo" placeholder="https://tu-logo.com/logo.png">
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar Perfil</button>
+                    </form>
+                </div>
+
+                <!-- Personalización y Temas -->
+                <div class="card">
+                    <h3>Tema y Apariencia</h3>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Modo de Color</label>
+                        <select id="cfg-app-theme" onchange="applyVisualTheme(this.value)">
+                            <option value="Oscuro">Modo Nocturno (Deep Space)</option>
+                            <option value="Claro">Modo Día (Clean White)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Color de Acento (Neon)</label>
+                        <input type="color" id="cfg-app-color" value="#00fff2" onchange="applyAccentColor(this.value)">
+                    </div>
+                </div>
+
+                <!-- Activación de Módulos (Modularidad) -->
+                <div class="card">
+                    <h3>Módulos Contratados</h3>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Selecciona los módulos activos
+                        para esta licencia.</p>
+                    <div id="cfg-modules-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" value="pos" checked> Punto de Venta (POS)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" value="inventory" checked> Inventario & SGA
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" value="support" checked> Servicio Técnico
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" value="crm" checked> Gestión de Clientes (CRM)
+                        </label>
+                    </div>
+                    <button class="btn-primary" style="margin-top: 1.5rem;" onclick="saveModulesConfig()">Actualizar
+                        Licencia</button>
+                </div>
+
+                <!-- Integraciones -->
+                <div class="card">
+                    <h3>Integración Facturación (SUNAT)</h3>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>API Key / Token SUNAT</label>
+                        <input type="password" id="cfg-app-sunat" placeholder="••••••••••••••••">
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Esta llave permite la comunicación para la
+                        emisión de boletas y facturas electrónicas.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- MODULO: DASHBOARD -->
         <section id="module-dashboard">
             <div class="stats-grid">
