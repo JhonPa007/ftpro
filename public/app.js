@@ -213,9 +213,13 @@ async function addPurchaseLine() {
     tr.id = `pur-row-${id}`;
     tr.innerHTML = `
         <td>
-            <select onchange="updatePurchaseLine(${id}, this.value)" id="prod-sel-${id}" required>
+            <select onchange="updatePurchaseLine(${id}, this.value)" id="prod-sel-${id}" required style="width: 100%;">
                 <option value="">Seleccione...</option>
-                ${products.map(p => `<option value="${p.id}" data-imei="${p.requiere_imei}" data-name="${p.nombre}">${p.nombre}</option>`).join('')}
+                ${products.map(p => `
+                    <option value="${p.id}" data-imei="${p.requiere_imei}" data-name="${p.nombre}">
+                        [${p.categoria?.nombre}] ${p.marca?.nombre} - ${p.nombre}
+                    </option>
+                `).join('')}
             </select>
         </td>
         <td><input type="number" value="1" min="1" onchange="updatePurchaseTotal()" id="cant-${id}"></td>
