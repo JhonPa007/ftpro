@@ -135,6 +135,10 @@ function renderAttrSelector(id, items) {
 /**
  * PROVIDERS
  */
+function openNewProviderModal() {
+    document.getElementById('modal-provider').style.display = 'flex';
+}
+
 async function loadProviders() {
     const res = await fetch('/api/inventory/providers');
     const providers = await res.json();
