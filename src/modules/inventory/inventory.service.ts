@@ -6,45 +6,45 @@ export class InventoryService {
      * MAESTROS: CATEGORÍAS, MARCAS, CARACTERÍSTICAS
      */
     async createCategory(nombre: string, descripcion?: string) {
-        return await prisma.categoria.create({ data: { nombre, descripcion } });
+        return await (prisma as any).categoria.create({ data: { nombre, descripcion } });
     }
 
     async updateCategory(id: string, data: { nombre?: string; activo?: boolean }) {
-        return await prisma.categoria.update({ where: { id }, data });
+        return await (prisma as any).categoria.update({ where: { id }, data });
     }
 
     async createBrand(nombre: string) {
-        return await prisma.marca.create({ data: { nombre } });
+        return await (prisma as any).marca.create({ data: { nombre } });
     }
 
     async updateBrand(id: string, data: { nombre?: string; activo?: boolean }) {
-        return await prisma.marca.update({ where: { id }, data });
+        return await (prisma as any).marca.update({ where: { id }, data });
     }
 
     async createAttribute(nombre: string) {
-        return await prisma.caracteristica.create({ data: { nombre } });
+        return await (prisma as any).caracteristica.create({ data: { nombre } });
     }
 
     async updateAttribute(id: string, data: { nombre?: string; activo?: boolean }) {
-        return await prisma.caracteristica.update({ where: { id }, data });
+        return await (prisma as any).caracteristica.update({ where: { id }, data });
     }
 
     async getAllCategories(onlyActive = false) {
-        return await prisma.categoria.findMany({
+        return await (prisma as any).categoria.findMany({
             where: onlyActive ? { activo: true } : {},
             orderBy: { nombre: 'asc' }
         });
     }
 
     async getAllBrands(onlyActive = false) {
-        return await prisma.marca.findMany({
+        return await (prisma as any).marca.findMany({
             where: onlyActive ? { activo: true } : {},
             orderBy: { nombre: 'asc' }
         });
     }
 
     async getAllAttributes(onlyActive = false) {
-        return await prisma.caracteristica.findMany({
+        return await (prisma as any).caracteristica.findMany({
             where: onlyActive ? { activo: true } : {},
             orderBy: { nombre: 'asc' }
         });
@@ -82,7 +82,7 @@ export class InventoryService {
         requiere_imei: boolean;
         attributes?: Array<{ id: string; valor: string }>;
     }) {
-        return await prisma.producto.create({
+        return await (prisma as any).producto.create({
             data: {
                 sku: data.sku,
                 nombre: data.nombre,
@@ -103,7 +103,7 @@ export class InventoryService {
     }
 
     async getProductCatalog() {
-        return await prisma.producto.findMany({
+        return await (prisma as any).producto.findMany({
             include: {
                 categoria: true,
                 marca: true,
@@ -119,7 +119,7 @@ export class InventoryService {
         estado_dispositivo: string;
         ubicacion: string;
     }>) {
-        return await prisma.itemInventario.createMany({
+        return await (prisma as any).itemInventario.createMany({
             data: items.map(item => ({
                 productoId,
                 imei: item.imei,
@@ -130,7 +130,7 @@ export class InventoryService {
     }
 
     async searchByImei(imei: string) {
-        return await prisma.itemInventario.findUnique({
+        return await (prisma as any).itemInventario.findUnique({
             where: { imei },
             include: { producto: { include: { marca: true, categoria: true } } }
         });
@@ -140,15 +140,15 @@ export class InventoryService {
      * PROVEEDORES
      */
     async createProveedor(data: { ruc: string; nombre: string; contacto?: string; telefono?: string; email?: string; direccion?: string }) {
-        return await prisma.proveedor.create({ data });
+        return await (prisma as any).proveedor.create({ data });
     }
 
     async updateProveedor(id: string, data: { nombre?: string; activo?: boolean; contacto?: string; telefono?: string; email?: string; direccion?: string }) {
-        return await prisma.proveedor.update({ where: { id }, data });
+        return await (prisma as any).proveedor.update({ where: { id }, data });
     }
 
     async getAllProveedores(onlyActive = false) {
-        return await prisma.proveedor.findMany({
+        return await (prisma as any).proveedor.findMany({
             where: onlyActive ? { activo: true } : {},
             orderBy: { nombre: 'asc' }
         });
@@ -172,7 +172,7 @@ export class InventoryService {
 
         return await prisma.$transaction(async (tx) => {
             // 1. Crear Cabecera
-            const compra = await tx.compra.create({
+            const compra = await (tx as any).compra.create({
                 data: {
                     proveedorId: data.proveedorId,
                     numero_factura: data.numero_factura,
@@ -183,7 +183,7 @@ export class InventoryService {
             // 2. Procesar cada item
             for (const item of data.items) {
                 // A. Crear Detalle de Compra
-                const detalle = await tx.detalleCompra.create({
+                const detalle = await (tx as any).detalleCompra.create({
                     data: {
                         compraId: compra.id,
                         productoId: item.productoId,
@@ -195,7 +195,7 @@ export class InventoryService {
                 // B. Crear Unidades de Inventario
                 if (item.imeis && item.imeis.length > 0) {
                     // Si tiene IMEIs, crear uno por uno
-                    await tx.itemInventario.createMany({
+                    await (tx as any).itemInventario.createMany({
                         data: item.imeis.map(imei => ({
                             productoId: item.productoId,
                             detalleCompraId: detalle.id,
@@ -210,11 +210,11 @@ export class InventoryService {
                         detalleCompraId: detalle.id,
                         estado_inventario: 'Disponible'
                     }));
-                    await tx.itemInventario.createMany({ data: itemsData });
+                    await (tx as any).itemInventario.createMany({ data: itemsData });
                 }
 
                 // C. Opcional: Actualizar el precio de compra histórico del producto
-                await tx.producto.update({
+                await (tx as any).producto.update({
                     where: { id: item.productoId },
                     data: { precio_compra: item.precio_unit }
                 });
@@ -226,7 +226,7 @@ export class InventoryService {
     // BUSQUEDA PARA POS
     async searchForPOS(query: string) {
         // 1. Buscar por IMEI exacto
-        const itemByImei = await prisma.itemInventario.findFirst({
+        const itemByImei = await (prisma as any).itemInventario.findFirst({
             where: {
                 imei: query,
                 estado_inventario: 'Disponible'
@@ -240,14 +240,14 @@ export class InventoryService {
                 id: itemByImei.producto.id,
                 sku: itemByImei.producto.sku,
                 nombre: itemByImei.producto.nombre,
-                precio: Number(itemByImei.producto.precios['retail'] || 0),
+                precio: Number((itemByImei.producto.precios as any)?.retail || 0),
                 imei: itemByImei.imei,
                 unitId: itemByImei.id
             }];
         }
 
         // 2. Buscar por SKU o Nombre
-        const products = await prisma.producto.findMany({
+        const products = await (prisma as any).producto.findMany({
             where: {
                 OR: [
                     { sku: { contains: query, mode: 'insensitive' } },
@@ -257,7 +257,7 @@ export class InventoryService {
             take: 5
         });
 
-        return products.map(p => ({
+        return products.map((p: any) => ({
             type: 'PRODUCTO',
             id: p.id,
             sku: p.sku,

@@ -6,29 +6,30 @@ export class ReportsService {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const stats = await prisma.factura.aggregate({
+        const stats = await (prisma as any).venta.aggregate({
             where: {
                 created_at: { gte: today }
             },
             _sum: {
-                total_venta: true,
-                igv_total: true
+                total: true
             },
             _count: {
                 id: true
             }
         });
 
+        const total = Number(stats._sum.total || 0);
+
         return {
             fecha: today.toISOString().split('T')[0],
-            total_ingresos: Number(stats._sum.total_venta || 0),
-            total_igv: Number(stats._sum.igv_total || 0),
+            total_ingresos: total,
+            total_igv: total - (total / 1.18),
             transacciones: stats._count.id
         };
     }
 
     async getLowStockAlerts() {
-        const products = await prisma.producto.findMany({
+        const products = await (prisma as any).producto.findMany({
             include: {
                 _count: {
                     select: { unidades: { where: { estado_inventario: 'Disponible' } } }
@@ -37,8 +38,8 @@ export class ReportsService {
         });
 
         return products
-            .filter(p => (p as any)._count.unidades <= p.stock_minimo)
-            .map(p => ({
+            .filter((p: any) => (p as any)._count.unidades <= p.stock_minimo)
+            .map((p: any) => ({
                 id: p.id,
                 nombre: p.nombre,
                 sku: p.sku,
@@ -48,7 +49,7 @@ export class ReportsService {
     }
 
     async getSupportStats() {
-        return await prisma.ordenServicio.groupBy({
+        return await (prisma as any).ordenServicio.groupBy({
             by: ['estado_servicio'],
             _count: {
                 id: true
