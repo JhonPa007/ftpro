@@ -50,11 +50,12 @@ export class InventoryService {
         });
     }
 
-    async getMasters() {
+    async getMasters(onlyActive = false) {
         return {
-            categories: await this.getAllCategories(),
-            brands: await this.getAllBrands(),
-            attributes: await this.getAllAttributes()
+            categories: await this.getAllCategories(onlyActive),
+            brands: await this.getAllBrands(onlyActive),
+            attributes: await this.getAllAttributes(onlyActive),
+            providers: await this.getAllProveedores(onlyActive)
         };
     }
 
@@ -261,7 +262,7 @@ export class InventoryService {
             id: p.id,
             sku: p.sku,
             nombre: p.nombre,
-            precio: Number(p.precios['retail'] || 0),
+            precio: Number((p.precios as any)?.retail || 0),
             requiere_imei: p.requiere_imei
         }));
     }

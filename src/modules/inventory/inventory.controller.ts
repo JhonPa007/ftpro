@@ -16,7 +16,10 @@ router.post('/products', async (req, res) => {
 });
 
 router.get('/masters', async (req, res) => {
-    try { res.json(await inventoryService.getMasters()); }
+    try {
+        const onlyActive = req.query.active === 'true';
+        res.json(await inventoryService.getMasters(onlyActive));
+    }
     catch (error: any) { res.status(500).json({ error: error.message }); }
 });
 

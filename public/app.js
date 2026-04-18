@@ -316,25 +316,41 @@ async function saveModulesConfig() {
 
 function updateClock() {
     const clock = document.getElementById('real-time-clock');
-    if (clock) {
-        clock.innerText = new Date().toLocaleString('es-PE', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-    }
+    const posClock = document.getElementById('pos-clock');
+    const nowStr = new Date().toLocaleString('es-PE', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
+    if (clock) clock.innerText = nowStr;
+    if (posClock) posClock.innerText = nowStr;
 }
 
 function showModule(moduleId) {
     const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+            // Soft reset for modules that are sections vs divs
+            if (el.tagName === 'SECTION' || el.classList.contains('module')) {
+                el.classList.remove('active-module');
+            }
+        }
         document.querySelector(`.nav-link[onclick*="${m}"]`)?.classList.remove('active');
     });
-    document.getElementById(`module-${moduleId}`).style.display = 'block';
+
+    const target = document.getElementById(`module-${moduleId}`);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active-module');
+    }
+
     document.querySelector(`.nav-link[onclick*="${moduleId}"]`)?.classList.add('active');
+
     if (moduleId === 'dashboard') updateDashboardStats();
     if (moduleId === 'inventory') loadInventory();
+    if (moduleId === 'pos') renderCart(); // Asegurar que el carrito se pinte si se cambió de pestaña
 }
 
 function switchTab(tabId) {
@@ -358,18 +374,23 @@ async function openConfigModal() {
 }
 
 async function refreshMasterLists() {
-    const res = await fetch('/api/inventory/master');
-    const { categories, brands, attributes } = await res.json();
+    try {
+        const res = await fetch('/api/inventory/masters');
+        const { categories, brands, attributes, providers } = await res.json();
 
-    renderMasterList('cfg-cat-list', categories, 'categories');
-    renderMasterList('cfg-brand-list', brands, 'brands');
-    renderMasterList('cfg-attr-list', attributes, 'attributes');
+        renderMasterList('cfg-cat-list', categories, 'categories');
+        renderMasterList('cfg-brand-list', brands, 'brands');
+        renderMasterList('cfg-attr-list', attributes, 'attributes');
 
-    const resActive = await fetch('/api/inventory/master?active=true');
-    const activeData = await resActive.json();
-    fillSelect('prod-category', activeData.categories);
-    fillSelect('prod-brand', activeData.brands);
-    renderAttrSelector('prod-attributes-container', activeData.attributes);
+        const resActive = await fetch('/api/inventory/masters?active=true');
+        const activeData = await resActive.json();
+        fillSelect('prod-category', activeData.categories);
+        fillSelect('prod-brand', activeData.brands);
+        fillSelect('pur-provider', activeData.providers); // Cargar proveedores aquí también
+        renderAttrSelector('prod-attributes-container', activeData.attributes);
+    } catch (e) {
+        console.error('Error refreshing master lists:', e);
+    }
 }
 
 function renderMasterList(id, items, type) {
@@ -500,11 +521,8 @@ async function openPurchaseModal() {
     document.getElementById('purchase-items-body').innerHTML = '';
     document.getElementById('pur-total-display').innerText = 'Total Compra: S/ 0.00';
 
-    // Cargar proveedores activos
-    const res = await fetch('/api/inventory/master?active=true');
-    const data = await res.json();
-    fillSelect('pur-provider', data.providers);
-
+    // Cargar proveedores y productos
+    await refreshMasterLists();
     addPurchaseLine(); // Empieza con una fila
 }
 
@@ -650,8 +668,10 @@ async function updateDashboardStats() {
 // DROPDOWNS & ATTRS
 function fillSelect(id, items) {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<option value="">Seleccione...</option>' +
-        items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    if (el && Array.isArray(items)) {
+        el.innerHTML = '<option value="">Seleccione...</option>' +
+            items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    }
 }
 
 function renderAttrSelector(id, items) {
