@@ -32,6 +32,9 @@ app.post('/api/inventory/categories', inventoryController.createCategory);
 app.post('/api/inventory/brands', inventoryController.createBrand);
 app.post('/api/inventory/attributes', inventoryController.createAttribute);
 
+app.get('/api/inventory/providers', inventoryController.listProviders);
+app.post('/api/inventory/providers', inventoryController.createProvider);
+
 app.get('/api/inventory/products', inventoryController.listProducts);
 app.post('/api/inventory/products', inventoryController.createProduct);
 app.post('/api/inventory/stock', inventoryController.addStock);

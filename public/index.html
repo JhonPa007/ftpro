@@ -124,6 +124,7 @@
             <div class="card">
                 <div class="inventory-tabs">
                     <button class="tab-link active" onclick="switchTab('catalog')">Catálogo</button>
+                    <button class="tab-link" onclick="switchTab('providers')">Proveedores</button>
                     <button class="tab-link" onclick="switchTab('movements')">Movimientos</button>
                 </div>
 
@@ -142,6 +143,50 @@
                         <tbody id="inventory-list-body"></tbody>
                     </table>
                 </div>
+
+                <div id="tab-providers" style="display: none;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3>Lista de Proveedores</h3>
+                        <button onclick="openNewProviderModal()">+ Nuevo Proveedor</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>RUC</th>
+                                <th>Razón Social</th>
+                                <th>Contacto</th>
+                                <th>Teléfono</th>
+                            </tr>
+                        </thead>
+                        <tbody id="provider-list-body"></tbody>
+                    </table>
+                </div>
+                ...
+                <!-- MODAL NUEVO PROVEEDOR -->
+                <div id="modal-provider" class="modal" style="display: none;">
+                    <div class="modal-content card">
+                        <h2><i class="fas fa-truck"></i> Registro de Proveedor</h2>
+                        <form id="form-new-provider">
+                            <div class="form-group"><label>RUC (11 dígitos)</label><input type="text" id="prov-ruc"
+                                    maxlength="11" required></div>
+                            <div class="form-group"><label>Razón Social</label><input type="text" id="prov-name"
+                                    required></div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group"><label>Nombre de Contacto</label><input type="text"
+                                        id="prov-contact"></div>
+                                <div class="form-group"><label>Teléfono</label><input type="text" id="prov-phone"></div>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button"
+                                    onclick="document.getElementById('modal-provider').style.display='none'"
+                                    style="background: #333; flex: 1;">Cancelar</button>
+                                <button type="submit" style="flex: 2;">Guardar Proveedor</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </section>
 

@@ -96,4 +96,15 @@ export class InventoryService {
             include: { producto: { include: { marca: true, categoria: true } } }
         });
     }
+
+    /**
+     * MÓDULO: PROVEEDORES
+     */
+    async createProveedor(data: { ruc: string; nombre: string; contacto?: string; telefono?: string }) {
+        return await prisma.proveedor.create({ data });
+    }
+
+    async getAllProveedores() {
+        return await prisma.proveedor.findMany({ orderBy: { nombre: 'asc' } });
+    }
 }

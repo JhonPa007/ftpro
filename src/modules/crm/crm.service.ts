@@ -13,7 +13,7 @@ export class CrmService {
         email?: string;
         direccion?: string;
     }) {
-        return await prisma.customer.upsert({
+        return await prisma.cliente.upsert({
             where: { numero_documento: data.numero_documento },
             update: data,
             create: data,
@@ -24,14 +24,14 @@ export class CrmService {
      * Obtener Vista 360 del Cliente (Historial Completo)
      */
     async getCustomerHistory(numeroDoc: string) {
-        const customer = await prisma.customer.findUnique({
+        const customer = await prisma.cliente.findUnique({
             where: { numero_documento: numeroDoc },
             include: {
-                invoices: {
+                facturas: {
                     orderBy: { created_at: 'desc' },
                     take: 10
                 },
-                serviceOrders: {
+                ordenesServicio: {
                     orderBy: { created_at: 'desc' },
                     take: 5
                 }
@@ -46,12 +46,12 @@ export class CrmService {
                 documento: `${customer.tipo_documento}-${customer.numero_documento}`,
                 contacto: customer.telefono || 'Sin teléfono'
             },
-            ventas: customer.invoices.map((inv: any) => ({
+            ventas: customer.facturas.map((inv: any) => ({
                 compra: inv.serie_correlativo,
                 monto: inv.total_venta,
                 fecha: inv.created_at
             })),
-            reparaciones: customer.serviceOrders.map((so: any) => ({
+            reparaciones: customer.ordenesServicio.map((so: any) => ({
                 orden: so.numero_orden,
                 equipo: so.marca_modelo,
                 estado: so.estado_servicio,

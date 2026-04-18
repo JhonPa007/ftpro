@@ -32,8 +32,21 @@ function showModule(moduleId) {
     if (moduleId === 'inventory') loadInventory();
 }
 
+function switchTab(tabId) {
+    ['catalog', 'providers', 'movements'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.style.display = 'none';
+        document.querySelector(`.tab-link[onclick*="${t}"]`)?.classList.remove('active');
+    });
+    document.getElementById(`tab-${tabId}`).style.display = 'block';
+    document.querySelector(`.tab-link[onclick*="${tabId}"]`)?.classList.add('active');
+
+    if (tabId === 'providers') loadProviders();
+    if (tabId === 'catalog') loadInventory();
+}
+
 /**
- * MASTER DATA MANAGEMENT
+ * MASTER DATA & PROVIDERS
  */
 async function openConfigModal() {
     document.getElementById('modal-config').style.display = 'flex';
@@ -48,7 +61,6 @@ async function refreshMasterLists() {
     renderList('cfg-brand-list', brands);
     renderChips('cfg-attr-list', attributes);
 
-    // Actualizar dropdowns del form producto
     fillSelect('prod-category', categories);
     fillSelect('prod-brand', brands);
     renderAttrSelector('prod-attributes-container', attributes);
@@ -56,23 +68,23 @@ async function refreshMasterLists() {
 
 function renderList(id, items) {
     const el = document.getElementById(id);
-    el.innerHTML = items.map(i => `<li>${i.nombre}</li>`).join('');
+    if (el) el.innerHTML = items.map(i => `<li>${i.nombre}</li>`).join('');
 }
 
 function renderChips(id, items) {
     const el = document.getElementById(id);
-    el.innerHTML = items.map(i => `<span class="status-badge" style="background: var(--glass);">${i.nombre}</span>`).join('');
+    if (el) el.innerHTML = items.map(i => `<span class="status-badge" style="background: var(--glass);">${i.nombre}</span>`).join('');
 }
 
 function fillSelect(id, items) {
     const el = document.getElementById(id);
-    el.innerHTML = '<option value="">Seleccione...</option>' +
+    if (el) el.innerHTML = '<option value="">Seleccione...</option>' +
         items.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
 }
 
 function renderAttrSelector(id, items) {
     const el = document.getElementById(id);
-    el.innerHTML = items.map(i => `
+    if (el) el.innerHTML = items.map(i => `
         <div style="display: flex; align-items: center; gap: 5px;">
             <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}">
             <label for="chk-${i.id}" style="margin:0; cursor:pointer;">${i.nombre}</label>
@@ -94,9 +106,46 @@ async function saveMaster(type, inputId) {
 }
 
 /**
- * PRODUCT MANAGEMENT
+ * PROVIDER LOGIC
  */
-async function openNewProductModal() {
+function openNewProviderModal() {
+    document.getElementById('modal-provider').style.display = 'flex';
+}
+
+async function loadProviders() {
+    const res = await fetch('/api/inventory/providers');
+    const providers = await res.json();
+    const tbody = document.getElementById('provider-list-body');
+    if (tbody) tbody.innerHTML = providers.map(p => `
+        <tr>
+            <td>${p.ruc}</td>
+            <td>${p.nombre}</td>
+            <td>${p.contacto || '-'}</td>
+            <td>${p.telefono || '-'}</td>
+        </tr>
+    `).join('');
+}
+
+/**
+ * INVENTORY LOGIC
+ */
+async function loadInventory() {
+    const res = await fetch('/api/inventory/products');
+    const products = await res.json();
+    const tbody = document.getElementById('inventory-list-body');
+    if (tbody) tbody.innerHTML = products.map(p => `
+        <tr>
+            <td>${p.sku}</td>
+            <td>${p.nombre}</td>
+            <td>${p.marca.nombre} / ${p.categoria.nombre}</td>
+            <td style="color: var(--danger);">S/ ${Number(p.precio_compra).toFixed(2)}</td>
+            <td style="color: var(--success);">S/ ${Number(p.precios.retail).toFixed(2)}</td>
+            <td>-</td>
+        </tr>
+    `).join('');
+}
+
+function openNewProductModal() {
     document.getElementById('modal-product').style.display = 'flex';
     refreshMasterLists();
 }
@@ -105,36 +154,20 @@ function closeProductModal() {
     document.getElementById('modal-product').style.display = 'none';
 }
 
-async function loadInventory() {
-    const res = await fetch('/api/inventory/products');
-    const products = await res.json();
-    const tbody = document.getElementById('inventory-list-body');
-    tbody.innerHTML = products.map(p => `
-        <tr>
-            <td>${p.sku}</td>
-            <td>${p.nombre}</td>
-            <td>${p.brand.nombre} / ${p.category.nombre}</td>
-            <td style="color: var(--danger);">S/ ${Number(p.precio_compra).toFixed(2)}</td>
-            <td style="color: var(--success);">S/ ${Number(p.precios.retail).toFixed(2)}</td>
-            <td>-</td>
-        </tr>
-    `).join('');
-}
-
 /**
- * STATS & POS
+ * STATS
  */
 async function updateDashboardStats() {
-    const salesRes = await fetch('/api/reports/daily-sales');
-    const salesData = await salesRes.json();
-    document.getElementById('stat-daily-sales').innerText = `S/ ${(salesData.total_ingresos || 0).toFixed(2)}`;
+    const res = await fetch('/api/reports/daily-sales');
+    const data = await res.json();
+    const el = document.getElementById('stat-daily-sales');
+    if (el) el.innerText = `S/ ${(data.total_ingresos || 0).toFixed(2)}`;
 }
 
 function initFormListeners() {
+    // FORM PRODUCTO
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        // Recolectar atributos seleccionados
         const attributes = [];
         document.querySelectorAll('input[name="attr-check"]:checked').forEach(chk => {
             const val = document.getElementById(`val-${chk.value}`).value;
@@ -148,9 +181,7 @@ function initFormListeners() {
             categoryId: document.getElementById('prod-category').value,
             precio_compra: parseFloat(document.getElementById('prod-price-buy').value),
             precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
-            stock_minimo: 5,
-            requiere_imei: true,
-            attributes: attributes
+            stock_minimo: 5, requiere_imei: true, attributes
         };
 
         const res = await fetch('/api/inventory/products', {
@@ -158,15 +189,30 @@ function initFormListeners() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+        if (res.ok) { alert('Producto guardado'); closeProductModal(); loadInventory(); }
+    });
 
+    // FORM PROVEEDOR
+    document.getElementById('form-new-provider')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            ruc: document.getElementById('prov-ruc').value,
+            nombre: document.getElementById('prov-name').value,
+            contacto: document.getElementById('prov-contact').value,
+            telefono: document.getElementById('prov-phone').value
+        };
+        const res = await fetch('/api/inventory/providers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         if (res.ok) {
-            alert('Producto guardado');
-            closeProductModal();
-            loadInventory();
+            alert('Proveedor registrado');
+            document.getElementById('modal-provider').style.display = 'none';
+            loadProviders();
         } else {
             const err = await res.json();
             alert(err.error);
         }
     });
-
 }

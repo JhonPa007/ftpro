@@ -2,9 +2,6 @@
 import prisma from '../../shared/prisma.js';
 
 export class ReportsService {
-    /**
-     * Reporte de Ventas Diarias (Resumen financiero)
-     */
     async getDailySalesReport() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -30,9 +27,6 @@ export class ReportsService {
         };
     }
 
-    /**
-     * Alerta de Inventario Crítico
-     */
     async getLowStockAlerts() {
         const products = await prisma.producto.findMany({
             include: {
@@ -53,9 +47,6 @@ export class ReportsService {
             }));
     }
 
-    /**
-     * Estado de Servicio Técnico
-     */
     async getSupportStats() {
         return await prisma.ordenServicio.groupBy({
             by: ['estado_servicio'],

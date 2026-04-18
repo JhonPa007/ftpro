@@ -11,6 +11,18 @@ const crmService = new CrmService();
 async function runTest() {
     console.log('🚀 Iniciando Prueba de Estrés Funcional...');
 
+    // 0. Crear Maestros necesarios
+    const cat = await prisma.categoria.upsert({
+        where: { nombre: 'Celulares' },
+        update: {},
+        create: { nombre: 'Celulares' }
+    });
+    const marca = await prisma.marca.upsert({
+        where: { nombre: 'Apple' },
+        update: {},
+        create: { nombre: 'Apple' }
+    });
+
     // 1. Crear Cliente
     console.log('1. Registrando Cliente en CRM...');
     const customer = await crmService.upsertCustomer({
@@ -23,12 +35,14 @@ async function runTest() {
 
     // 2. Crear Producto en Inventario
     console.log('2. Registrando Producto y Stock...');
-    const product = await prisma.product.create({
+    const product = await prisma.producto.create({
         data: {
             sku: 'IPHONE-15-PRO-BK',
             nombre: 'iPhone 15 Pro Titanium Black',
-            categoria: 'Celulares',
+            categoriaId: cat.id,
+            marcaId: marca.id,
             precios: { retail: 5499, wholesale: 5100, min_price: 4999 },
+            precio_compra: 4500,
             requiere_imei: true,
             stock_minimo: 2
         }
@@ -36,13 +50,11 @@ async function runTest() {
 
     // 3. Agregar Stock (IMEI)
     const imei = '358706000000001';
-    await prisma.stockItem.create({
+    await prisma.itemInventario.create({
         data: {
-            productId: product.id,
+            productoId: product.id,
             imei: imei,
-            estado_dispositivo: 'Nuevo',
-            estado_inventario: 'Disponible',
-            hash_verificacion: 'hash-test-initial'
+            estado_inventario: 'Disponible'
         }
     });
     console.log('✅ Producto y IMEI 358706000000001 listos en almacén.');
@@ -69,7 +81,7 @@ async function runTest() {
     // 6. Consultar Alertas de Inventario
     console.log('5. Consultando Alertas de Inventario (SGA)...');
     const alerts = await reportsService.getLowStockAlerts();
-    console.log(`⚠️ Alertas detectadas: ${alerts.length}. Producto ${product.sku} está en bajo stock.`);
+    console.log(`⚠️ Alertas detectadas: ${alerts.length}.`);
 
     // 7. Consultar Vista 360 del Cliente
     console.log('6. Consultando Historial CRM del Cliente...');
