@@ -256,6 +256,8 @@ td {
 .btn-secondary {
     background: #161b22;
     border: 1px solid var(--glass);
+    color: #ffffff;
+    /* Blanco para máxima legibilidad */
 }
 
 .btn-icon {
