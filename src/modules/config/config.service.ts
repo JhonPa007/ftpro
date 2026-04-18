@@ -9,7 +9,7 @@ export class ConfigService {
                 data: {
                     id: 'default',
                     empresa_nombre: 'FTPRO',
-                    modulos: ["dashboard", "pos", "inventory", "support", "crm"]
+                    modulos: ["dashboard", "pos", "inventory", "support", "crm", "config"]
                 }
             });
         }

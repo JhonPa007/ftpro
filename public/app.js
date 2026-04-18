@@ -57,7 +57,7 @@ async function loadConfig() {
             const activeModules = typeof cfg.modulos === 'string' ? JSON.parse(cfg.modulos) : cfg.modulos;
             document.querySelectorAll('.nav-link').forEach(link => {
                 const mod = link.dataset.module;
-                if (mod === 'dashboard' || activeModules.includes(mod)) {
+                if (mod === 'dashboard' || mod === 'config' || activeModules.includes(mod)) {
                     link.style.display = 'flex';
                 } else {
                     link.style.display = 'none';
