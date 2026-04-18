@@ -201,38 +201,40 @@
         </section>
     </main>
 
-    <!-- MODAL CONFIGURACIÓN (CATEGORÍAS, MARCAS, ATRIBUTOS) -->
     <div id="modal-config" class="modal" style="display: none;">
-        <div class="modal-content card">
+        <div class="modal-content card" style="position: relative;">
+            <span class="close-modal"
+                onclick="document.getElementById('modal-config').style.display='none'">&times;</span>
             <h2>Configuración de Maestros</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                 <div>
                     <h4>Categorías</h4>
-                    <div class="form-group">
-                        <input type="text" id="cfg-cat-name" placeholder="Nueva Categoría">
-                        <button onclick="saveMaster('categories', 'cfg-cat-name')">Añadir</button>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="cfg-cat-name" placeholder="Nueva Categoría" style="flex: 1;">
+                        <button onclick="saveMaster('categories', 'cfg-cat-name')" class="btn-icon"><i
+                                class="fas fa-plus"></i></button>
                     </div>
                     <ul id="cfg-cat-list" class="cfg-list"></ul>
                 </div>
                 <div>
                     <h4>Marcas</h4>
-                    <div class="form-group">
-                        <input type="text" id="cfg-brand-name" placeholder="Nueva Marca">
-                        <button onclick="saveMaster('brands', 'cfg-brand-name')">Añadir</button>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="cfg-brand-name" placeholder="Nueva Marca" style="flex: 1;">
+                        <button onclick="saveMaster('brands', 'cfg-brand-name')" class="btn-icon"><i
+                                class="fas fa-plus"></i></button>
                     </div>
                     <ul id="cfg-brand-list" class="cfg-list"></ul>
                 </div>
             </div>
             <div style="margin-top: 1rem;">
                 <h4>Características (Atributos)</h4>
-                <div class="form-group">
-                    <input type="text" id="cfg-attr-name" placeholder="Ej: RAM, Color, Procesador">
-                    <button onclick="saveMaster('attributes', 'cfg-attr-name')">Añadir</button>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="cfg-attr-name" placeholder="Ej: RAM, Color, Procesador" style="flex: 1;">
+                    <button onclick="saveMaster('attributes', 'cfg-attr-name')" class="btn-icon"><i
+                            class="fas fa-plus"></i></button>
                 </div>
                 <ul id="cfg-attr-list" class="cfg-list" style="display: flex; flex-wrap: wrap; gap: 5px;"></ul>
             </div>
-            <button onclick="document.getElementById('modal-config').style.display='none'"
-                style="margin-top: 1rem;">Cerrar</button>
         </div>
     </div>
 

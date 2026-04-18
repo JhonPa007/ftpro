@@ -126,14 +126,24 @@ header {
 }
 
 input,
-select {
+select,
+textarea {
     width: 100%;
-    background: #0D1117;
-    border: 1px solid var(--glass);
-    padding: 0.8rem;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     color: white;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus {
     outline: none;
+    border-color: var(--neon);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 242, 0.1);
 }
 
 input:focus {
@@ -246,4 +256,22 @@ td {
 .btn-secondary {
     background: #161b22;
     border: 1px solid var(--glass);
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    min-width: auto;
+    border-radius: 8px;
+    background: var(--neon);
+    color: #000;
+}
+
+.btn-icon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px var(--neon);
 }
