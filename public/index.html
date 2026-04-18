@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     <nav>
         <h1><i class="fas fa-mobile-alt"></i> FTPRO</h1>
@@ -25,7 +27,7 @@
         <div class="nav-link" onclick="showModule('crm')">
             <i class="fas fa-users"></i> Clientes (CRM)
         </div>
-        
+
         <div style="margin-top: auto; padding: 1rem; font-size: 0.7rem; color: #555;">
             v1.2.0 | Producción Ready
         </div>
@@ -38,7 +40,7 @@
                 <h2>Panel de Control</h2>
                 <div id="real-time-clock">Cargando fecha...</div>
             </header>
-            
+
             <div class="dashboard-grid">
                 <div class="card">
                     <h3>Ventas del Día</h3>
@@ -118,7 +120,8 @@
                         <span>IGV (18%)</span>
                         <span id="pos-igv">S/ 0.00</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.5rem; margin: 2rem 0; color: var(--neon);">
+                    <div
+                        style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.5rem; margin: 2rem 0; color: var(--neon);">
                         <span>TOTAL</span>
                         <span id="pos-total">S/ 0.00</span>
                     </div>
@@ -129,8 +132,44 @@
                 </div>
             </div>
         </section>
+
+        <!-- INVENTORY MODULE -->
+        <section id="module-inventory" style="display: none;">
+            <header>
+                <h2>Gestión de Inventario</h2>
+                <button onclick="alert('Funcionalidad de Nuevo Producto próximamente')">+ Nuevo Producto</button>
+            </header>
+            <div class="card">
+                <h3>Catálogo de Productos</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Producto</th>
+                            <th>Stock Min</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-list-body">
+                        <!-- Cargando... -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CRM MODULE -->
+        <section id="module-crm" style="display: none;">
+            <header>
+                <h2>Panel de Clientes (CRM)</h2>
+            </header>
+            <div class="card">
+                <input type="text" placeholder="Buscar por DNI..." style="margin-bottom: 1rem;">
+                <p>Módulo de historial de clientes en desarrollo.</p>
+            </div>
+        </section>
     </main>
 
     <script src="app.js"></script>
 </body>
+
 </html>

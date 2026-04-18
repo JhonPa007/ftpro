@@ -8,15 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateClock() {
     const clock = document.getElementById('real-time-clock');
-    clock.innerText = new Date().toLocaleString('es-PE', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    if (clock) {
+        clock.innerText = new Date().toLocaleString('es-PE', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
 }
 
 /**
@@ -25,7 +27,8 @@ function updateClock() {
 function showModule(moduleId) {
     const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm'];
     modules.forEach(m => {
-        document.getElementById(`module-${m}`)?.style.setProperty('display', 'none');
+        const el = document.getElementById(`module-${m}`);
+        if (el) el.style.display = 'none';
     });
 
     const activeModule = document.getElementById(`module-${moduleId}`);
@@ -42,6 +45,7 @@ function showModule(moduleId) {
     });
 
     if (moduleId === 'dashboard') updateDashboardStats();
+    if (moduleId === 'inventory') loadInventory();
 }
 
 /**
@@ -49,31 +53,56 @@ function showModule(moduleId) {
  */
 async function updateDashboardStats() {
     try {
-        // Ventas diarias
         const salesRes = await fetch('/api/reports/daily-sales');
         const salesData = await salesRes.json();
-        document.getElementById('stat-daily-sales').innerText = `S/ ${salesData.total_ingresos.toFixed(2)}`;
+        const salesEl = document.getElementById('stat-daily-sales');
+        if (salesEl) salesEl.innerText = `S/ ${(salesData.total_ingresos || 0).toFixed(2)}`;
 
-        // Alertas de Inventario
         const inventoryRes = await fetch('/api/reports/inventory-alerts');
         const alerts = await inventoryRes.json();
         const tbody = document.querySelector('#table-inventory-alerts tbody');
-        tbody.innerHTML = '';
-
-        alerts.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.nombre}</td>
-                <td>${item.sku}</td>
-                <td>${item.stock_actual}</td>
-                <td>${item.stock_minimo}</td>
-                <td><span class="status-badge status-low">STOCK BAJO [${item.clasificacion}]</span></td>
-            `;
-            tbody.appendChild(tr);
-        });
-
+        if (tbody) {
+            tbody.innerHTML = '';
+            alerts.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.nombre}</td>
+                    <td>${item.sku}</td>
+                    <td>${item.stock_actual}</td>
+                    <td>${item.stock_minimo}</td>
+                    <td><span class="status-badge status-low">STOCK BAJO</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
+    }
+}
+
+/**
+ * Carga visual del inventario
+ */
+async function loadInventory() {
+    try {
+        const res = await fetch('/api/reports/inventory-alerts');
+        const products = await res.json();
+        const tbody = document.getElementById('inventory-list-body');
+        if (tbody) {
+            tbody.innerHTML = '';
+            products.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.sku}</td>
+                    <td>${p.nombre}</td>
+                    <td>${p.stock_minimo}</td>
+                    <td><button onclick="alert('Funcionalidad de edición en desarrollo para SKU: ${p.sku}')">Editar</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error('Error cargando inventario:', e);
     }
 }
 
@@ -82,12 +111,12 @@ async function updateDashboardStats() {
  */
 async function executeSale() {
     const data = {
-        productId: document.getElementById('pos-product-list').value,
-        imei: document.getElementById('pos-imei').value,
+        productId: document.getElementById('pos-product-list')?.value,
+        imei: document.getElementById('pos-imei')?.value,
         cliente: {
-            tipoDoc: document.getElementById('pos-client-type').value,
-            numeroDoc: document.getElementById('pos-client-doc').value,
-            nombre: document.getElementById('pos-client-name').value
+            tipoDoc: document.getElementById('pos-client-type')?.value,
+            numeroDoc: document.getElementById('pos-client-doc')?.value,
+            nombre: document.getElementById('pos-client-name')?.value
         },
         paymentMethod: 'Efectivo'
     };
