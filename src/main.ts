@@ -41,6 +41,8 @@ app.get('/api/crm/clients/search', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Error searching clients' }); }
 });
 
+app.get('/api/crm/lookup/:type/:number', crmController.lookupDocument);
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Sistema de Gestión de Celulares Operativo' });

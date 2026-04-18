@@ -890,4 +890,145 @@ function initFormListeners() {
             if (role === 'Tecnico') p.checked = (p.value === 'support');
         });
     });
+    // FORM NEW PROVIDER
+    document.getElementById('form-new-provider')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            ruc: document.getElementById('prov-ruc').value,
+            nombre: document.getElementById('prov-name').value,
+            email: document.getElementById('prov-email').value,
+            telefono: document.getElementById('prov-phone').value,
+            direccion: document.getElementById('prov-address').value,
+            contacto: document.getElementById('prov-contact').value
+        };
+        const res = await fetch('/api/inventory/providers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            alert('✅ Proveedor guardado');
+            document.getElementById('modal-provider').style.display = 'none';
+            refreshMasterLists();
+        }
+    });
+
+    // FORM NEW CLIENT
+    document.getElementById('form-new-client')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            tipo_documento: document.getElementById('cli-type').value,
+            numero_documento: document.getElementById('cli-number').value,
+            nombre: document.getElementById('cli-name').value,
+            telefono: document.getElementById('cli-phone').value,
+            email: document.getElementById('cli-email').value,
+            direccion: document.getElementById('cli-address').value
+        };
+        const res = await fetch('/api/crm/customers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            const client = await res.json();
+            alert('✅ Cliente guardado');
+            document.getElementById('modal-client').style.display = 'none';
+            if (typeof selectClientPOS === 'function') selectClientPOS(client);
+        }
+    });
 }
+
+// CLIENTES & EXTERNAL LOOKUP
+function openAddClientModal() {
+    const modal = document.getElementById('modal-client');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('form-new-client')?.reset();
+        adjustClientFields();
+    }
+}
+
+function adjustClientFields() {
+    const type = document.getElementById('cli-type')?.value;
+    const lbl = document.getElementById('lbl-cli-name');
+    if (lbl) lbl.innerText = type === 'DNI' ? 'Nombres y Apellidos' : 'Razón Social';
+}
+
+async function lookupClientExternal() {
+    const type = document.getElementById('cli-type').value;
+    const number = document.getElementById('cli-number').value;
+
+    if (!number || number.length < 8) return alert('⚠️ Ingrese un número válido');
+
+    const btn = event.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(`/api/crm/lookup/${type}/${number}`);
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('cli-name').value = data.tipo === 'DNI' ? data.nombre_completo : data.razon_social;
+            document.getElementById('cli-address').value = data.direccion || '';
+        } else {
+            alert('❌ No se encontraron datos para este documento');
+        }
+    } catch (e) {
+        alert('❌ Error en la consulta: ' + e.message);
+    } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+let selectedClient = null;
+
+async function handleClientSearchPOS(val) {
+    const results = document.getElementById('pos-client-results');
+    if (val.length < 2) {
+        if (results) results.style.display = 'none';
+        return;
+    }
+
+    const res = await fetch(`/api/crm/clients/search?q=${val}`);
+    const clients = await res.json();
+
+    if (results && clients.length > 0) {
+        results.innerHTML = clients.map(c => `
+            <div class="search-item" onclick='selectClientPOS(${JSON.stringify(c).replace(/'/g, "&apos;")})'>
+                <strong>${c.nombre}</strong><br>
+                <small>${c.tipo_documento}: ${c.numero_documento}</small>
+            </div>
+        `).join('');
+        results.style.display = 'block';
+    } else if (results) {
+        results.style.display = 'none';
+    }
+}
+
+function selectClientPOS(client) {
+    selectedClient = client;
+    const searchInput = document.getElementById('pos-client-search');
+    if (searchInput) searchInput.value = client.numero_documento;
+
+    const results = document.getElementById('pos-client-results');
+    if (results) results.style.display = 'none';
+
+    const nameEl = document.getElementById('pos-client-name');
+    const docEl = document.getElementById('pos-client-doc');
+    const infoEl = document.getElementById('selected-client-info');
+
+    if (nameEl) nameEl.innerText = client.nombre;
+    if (docEl) docEl.innerText = `${client.tipo_documento}: ${client.numero_documento}`;
+    if (infoEl) infoEl.style.display = 'block';
+}
+
+// Cerrar dropdowns al hacer clic fuera
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.form-group')) {
+        const dropdowns = document.querySelectorAll('.search-dropdown');
+        dropdowns.forEach(d => d.style.display = 'none');
+    }
+});

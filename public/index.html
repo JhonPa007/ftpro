@@ -602,6 +602,56 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- MODAL: NUEVO CLIENTE (External Lookup) -->
+    <div id="modal-client" class="modal" style="display: none;">
+        <div class="modal-content card">
+            <span class="close-modal"
+                onclick="document.getElementById('modal-client').style.display='none'">&times;</span>
+            <h2>Registro de Nuevo Cliente</h2>
+            <form id="form-new-client">
+                <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: 10px; align-items: flex-end;">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="cli-type" class="input-glow" onchange="adjustClientFields()">
+                            <option value="DNI">DNI</option>
+                            <option value="RUC">RUC</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Documento</label>
+                        <input type="text" id="cli-number" required placeholder="8 o 11 dígitos">
+                    </div>
+                    <button type="button" class="btn-micro" style="height: 40px;" onclick="lookupClientExternal()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-cli-name">Nombres y Apellidos / Razón Social</label>
+                    <input type="text" id="cli-name" required placeholder="Carga automática o manual">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" id="cli-phone" placeholder="987654321">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="cli-email" placeholder="cliente@correo.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="cli-address" placeholder="Dirección completa">
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Guardar
+                    Cliente</button>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

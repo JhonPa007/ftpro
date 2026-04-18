@@ -25,3 +25,14 @@ export const getHistory = async (req: Request, res: Response) => {
 export const searchClients = async (query: string) => {
     return await crmService.searchClients(query);
 };
+
+export const lookupDocument = async (req: Request, res: Response) => {
+    try {
+        const type = req.params.type as string;
+        const number = req.params.number as string;
+        const data = await crmService.lookupExternalDocument(type, number);
+        res.json(data);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
