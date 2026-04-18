@@ -121,11 +121,11 @@ export class InventoryService {
     /**
      * PROVEEDORES
      */
-    async createProveedor(data: { ruc: string; nombre: string; contacto?: string; telefono?: string }) {
+    async createProveedor(data: { ruc: string; nombre: string; contacto?: string; telefono?: string; email?: string; direccion?: string }) {
         return await prisma.proveedor.create({ data });
     }
 
-    async updateProveedor(id: string, data: { nombre?: string; activo?: boolean; contacto?: string; telefono?: string }) {
+    async updateProveedor(id: string, data: { nombre?: string; activo?: boolean; contacto?: string; telefono?: string; email?: string; direccion?: string }) {
         return await prisma.proveedor.update({ where: { id }, data });
     }
 

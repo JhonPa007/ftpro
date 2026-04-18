@@ -143,9 +143,15 @@ async function loadProviders() {
         <tr style="opacity: ${p.activo ? 1 : 0.4};">
             <td>${p.ruc}</td>
             <td>${p.nombre}</td>
-            <td>${p.contacto || '-'}</td>
+            <td>${p.email || '-'}</td>
+            <td>${p.direccion || '-'}</td>
             <td>
-                <button onclick="toggleProvider('${p.id}', ${p.activo})" class="btn-micro"><i class="fas ${p.activo ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+                <div style="display: flex; gap: 5px;">
+                  <button onclick="toggleProvider('${p.id}', ${p.activo})" class="btn-micro" title="Habilitar/Deshabilitar">
+                    <i class="fas ${p.activo ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                  </button>
+                  <button onclick="editProvider('${p.id}', '${p.nombre}')" class="btn-micro" title="Editar"><i class="fas fa-edit"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -156,6 +162,17 @@ async function toggleProvider(id, current) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: !current })
+    });
+    loadProviders();
+}
+
+async function editProvider(id, currentName) {
+    const newName = prompt('Ingrese el nuevo nombre/razón social:', currentName);
+    if (!newName || newName === currentName) return;
+    await fetch(`/api/inventory/providers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newName })
     });
     loadProviders();
 }
@@ -211,13 +228,23 @@ function initFormListeners() {
             ruc: document.getElementById('prov-ruc').value,
             nombre: document.getElementById('prov-name').value,
             contacto: document.getElementById('prov-contact').value,
-            telefono: document.getElementById('prov-phone').value
+            telefono: document.getElementById('prov-phone').value,
+            email: document.getElementById('prov-email').value,
+            direccion: document.getElementById('prov-address').value
         };
         const res = await fetch('/api/inventory/providers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.json(payload)
+            body: JSON.stringify(payload)
         });
-        if (res.ok) { alert('Proveedor registrado'); document.getElementById('modal-provider').style.display = 'none'; loadProviders(); }
+        if (res.ok) {
+            alert('Proveedor registrado');
+            document.getElementById('modal-provider').style.display = 'none';
+            loadProviders();
+            e.target.reset(); // Limpiar formulario
+        } else {
+            const err = await res.json();
+            alert(`Error: ${err.error || 'No se pudo guardar'}`);
+        }
     });
 }
