@@ -170,6 +170,6 @@ model Configuracion {
   sunat_api_key   String?
   modulos         Json     @default("[]")
   created_at      DateTime @default(now())
-  updated_at      DateTime @updated_at
+  updated_at      DateTime @updatedAt
   @@map("configuracion")
 }
