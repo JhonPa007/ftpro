@@ -378,80 +378,134 @@ function initFormListeners() {
     // FORM PRODUCTO
     document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const attributes = [];
-        document.querySelectorAll('input[name="attr-check"]:checked').forEach(chk => {
-            const val = document.getElementById(`val-${chk.value}`).value;
-            if (val) attributes.push({ id: chk.value, valor: val });
-        });
-        const payload = {
-            sku: document.getElementById('prod-sku').value,
-            nombre: document.getElementById('prod-name').value,
-            brandId: document.getElementById('prod-brand').value,
-            categoryId: document.getElementById('prod-category').value,
-            precio_compra: parseFloat(document.getElementById('prod-price-buy').value),
-            precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
-            stock_minimo: 5, requiere_imei: true, attributes
-        };
-        const res = await fetch('/api/inventory/products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) { alert('Producto guardado'); document.getElementById('modal-product').style.display = 'none'; loadInventory(); }
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = 'Registrando...';
+        btn.disabled = true;
+
+        try {
+            const attributes = [];
+            document.querySelectorAll('input[name="attr-check"]:checked').forEach(chk => {
+                const val = document.getElementById(`val-${chk.value}`).value;
+                if (val) attributes.push({ id: chk.value, valor: val });
+            });
+
+            const payload = {
+                sku: document.getElementById('prod-sku').value,
+                nombre: document.getElementById('prod-name').value,
+                brandId: document.getElementById('prod-brand').value,
+                categoryId: document.getElementById('prod-category').value,
+                precio_compra: parseFloat(document.getElementById('prod-price-buy').value) || 0,
+                precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) || 0 },
+                stock_minimo: 5,
+                requiere_imei: true, // Por defecto por ahora
+                attributes
+            };
+
+            const res = await fetch('/api/inventory/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert('✅ Producto guardado correctamente');
+                document.getElementById('modal-product').style.display = 'none';
+                e.target.reset();
+                loadInventory();
+            } else {
+                const err = await res.json();
+                alert(`❌ Error: ${err.error || 'No se pudo guardar el producto'}`);
+            }
+        } catch (error) {
+            console.error('Error en registro:', error);
+            alert('❌ Error de conexión con el servidor');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     });
 
     // FORM PROVEEDOR
     document.getElementById('form-new-provider')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const payload = {
-            ruc: document.getElementById('prov-ruc').value,
-            nombre: document.getElementById('prov-name').value,
-            contacto: document.getElementById('prov-contact').value,
-            telefono: document.getElementById('prov-phone').value,
-            email: document.getElementById('prov-email').value,
-            direccion: document.getElementById('prov-address').value
-        };
-        const res = await fetch('/api/inventory/providers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-            alert('Proveedor registrado');
-            document.getElementById('modal-provider').style.display = 'none';
-            loadProviders();
-            e.target.reset();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = 'Guardando...';
+        btn.disabled = true;
+
+        try {
+            const payload = {
+                ruc: document.getElementById('prov-ruc').value,
+                nombre: document.getElementById('prov-name').value,
+                contacto: document.getElementById('prov-contact').value,
+                telefono: document.getElementById('prov-phone').value,
+                email: document.getElementById('prov-email').value,
+                direccion: document.getElementById('prov-address').value
+            };
+            const res = await fetch('/api/inventory/providers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('✅ Proveedor registrado');
+                document.getElementById('modal-provider').style.display = 'none';
+                e.target.reset();
+                loadProviders();
+            } else {
+                const err = await res.json();
+                alert(`❌ Error: ${err.error || 'No se pudo guardar'}`);
+            }
+        } catch (err) {
+            alert('❌ Error de conexión');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     });
 
     // FORM COMPRA
     document.getElementById('form-purchase')?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = 'Procesando Compra...';
+        btn.disabled = true;
 
-        const payload = {
-            proveedorId: document.getElementById('pur-provider').value,
-            numero_factura: document.getElementById('pur-invoice').value,
-            items: purchaseItems.map(item => ({
-                productoId: item.productoId,
-                cantidad: parseInt(document.getElementById(`cant-${item.id}`).value),
-                precio_unit: parseFloat(document.getElementById(`price-${item.id}`).value),
-                imeis: item.imeis
-            }))
-        };
+        try {
+            const payload = {
+                proveedorId: document.getElementById('pur-provider').value,
+                numero_factura: document.getElementById('pur-invoice').value,
+                items: purchaseItems.map(item => ({
+                    productoId: item.productoId,
+                    cantidad: parseInt(document.getElementById(`cant-${item.id}`).value) || 0,
+                    precio_unit: parseFloat(document.getElementById(`price-${item.id}`).value) || 0,
+                    imeis: item.imeis
+                }))
+            };
 
-        const res = await fetch('/api/inventory/purchases', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+            const res = await fetch('/api/inventory/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-        if (res.ok) {
-            alert('Compra registrada y Stock actualizado');
-            document.getElementById('modal-purchase').style.display = 'none';
-            loadInventory();
-        } else {
-            const err = await res.json();
-            alert(`Error: ${err.error}`);
+            if (res.ok) {
+                alert('✅ Compra registrada y Stock actualizado');
+                document.getElementById('modal-purchase').style.display = 'none';
+                e.target.reset();
+                purchaseItems = [];
+                loadInventory();
+            } else {
+                const err = await res.json();
+                alert(`❌ Error: ${err.error || 'No se pudo procesar la compra'}`);
+            }
+        } catch (err) {
+            alert('❌ Error de red al procesar la compra');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     });
 }
