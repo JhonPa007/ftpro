@@ -983,8 +983,6 @@ async function lookupClientExternal() {
     }
 }
 
-let selectedClient = null;
-
 async function handleClientSearchPOS(val) {
     const results = document.getElementById('pos-client-results');
     if (val.length < 2) {
