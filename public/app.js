@@ -3,7 +3,8 @@
 let purchaseItems = [];
 let currentImeiContext = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadConfig();
     updateDashboardStats();
     updateClock();
     setInterval(updateClock, 1000);
@@ -30,6 +31,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+/**
+ * CONFIGURATION ENGINE
+ */
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const cfg = await res.json();
+
+        // Apply Company Info
+        if (cfg.empresa_nombre) {
+            document.getElementById('company-name-text') && (document.getElementById('company-name-text').innerText = cfg.empresa_nombre);
+            document.getElementById('cfg-app-name') && (document.getElementById('cfg-app-name').value = cfg.empresa_nombre);
+        }
+        if (cfg.empresa_ruc) document.getElementById('cfg-app-ruc') && (document.getElementById('cfg-app-ruc').value = cfg.empresa_ruc);
+        if (cfg.empresa_logo) document.getElementById('cfg-app-logo') && (document.getElementById('cfg-app-logo').value = cfg.empresa_logo);
+
+        // Apply Visuals
+        applyVisualTheme(cfg.tema || 'Oscuro', false);
+        applyAccentColor(cfg.color_acento || '#00fff2', false);
+
+        // Apply Modularity
+        if (cfg.modulos) {
+            const activeModules = typeof cfg.modulos === 'string' ? JSON.parse(cfg.modulos) : cfg.modulos;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const mod = link.dataset.module;
+                if (mod === 'dashboard' || activeModules.includes(mod)) {
+                    link.style.display = 'flex';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+            // Update checkboxes
+            document.querySelectorAll('#cfg-modules-list input').forEach(chk => {
+                chk.checked = activeModules.includes(chk.value);
+            });
+        }
+    } catch (e) { console.error('Error loading config:', e); }
+}
+
+function applyVisualTheme(theme, save = true) {
+    const root = document.documentElement;
+    if (theme === 'Claro') {
+        root.style.setProperty('--bg-dark', '#f0f2f5');
+        root.style.setProperty('--sidebar-bg', '#ffffff');
+        root.style.setProperty('--text', '#333333');
+        root.style.setProperty('--text-muted', '#666666');
+        root.style.setProperty('--glass', 'rgba(0,0,0,0.05)');
+        root.style.setProperty('--glass-border', 'rgba(0,0,0,0.1)');
+    } else {
+        root.style.setProperty('--bg-dark', '#0a0b1e');
+        root.style.setProperty('--sidebar-bg', '#11122a');
+        root.style.setProperty('--text', '#e0e0e0');
+        root.style.setProperty('--text-muted', '#a0a0a0');
+        root.style.setProperty('--glass', 'rgba(255,255,255,0.05)');
+        root.style.setProperty('--glass-border', 'rgba(255,255,255,0.1)');
+    }
+    if (save) saveConfig({ tema: theme });
+}
+
+function applyAccentColor(color, save = true) {
+    document.documentElement.style.setProperty('--neon', color);
+    if (save) saveConfig({ color_acento: color });
+}
+
+async function saveConfig(data) {
+    await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+}
+
+async function saveModulesConfig() {
+    const active = Array.from(document.querySelectorAll('#cfg-modules-list input:checked')).map(i => i.value);
+    await saveConfig({ modulos: active });
+    alert('✅ Licencia de módulos actualizada. Reiniciando vista...');
+    loadConfig();
+}
 
 function updateClock() {
     const clock = document.getElementById('real-time-clock');
@@ -532,5 +612,19 @@ function initFormListeners() {
             btn.innerText = originalText;
             btn.disabled = false;
         }
+    });
+
+    // FORM CONFIG PROFILE
+    document.getElementById('form-config-profile')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            empresa_nombre: document.getElementById('cfg-app-name').value,
+            empresa_ruc: document.getElementById('cfg-app-ruc').value,
+            empresa_logo: document.getElementById('cfg-app-logo').value,
+            sunat_api_key: document.getElementById('cfg-app-sunat').value
+        };
+        await saveConfig(payload);
+        alert('✅ Perfil de empresa actualizado');
+        loadConfig();
     });
 }
