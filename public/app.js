@@ -146,3 +146,96 @@ async function executeSale() {
         alert('Error conectando con el servidor.');
     }
 }
+
+/**
+ * Lógica de Modal e Inventario Dinámico
+ */
+function openNewProductModal() {
+    document.getElementById('modal-product').style.display = 'flex';
+}
+
+function closeProductModal() {
+    document.getElementById('modal-product').style.display = 'none';
+}
+
+function toggleCategoryFields() {
+    const category = document.getElementById('prod-category').value;
+    const container = document.getElementById('dynamic-specs');
+    const autoImei = document.getElementById('prod-requires-imei');
+
+    container.innerHTML = '';
+
+    if (category === 'Celulares') {
+        autoImei.value = 'true';
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="text" id="spec-ram" placeholder="RAM (ej: 8GB)">
+                <input type="text" id="spec-storage" placeholder="Almacenamiento (ej: 256GB)">
+                <input type="text" id="spec-cpu" placeholder="Procesador">
+                <input type="text" id="spec-screen" placeholder="Pantalla (ej: 6.7'')">
+            </div>
+        `;
+    } else if (category === 'Accesorios' || category === 'Repuestos') {
+        autoImei.value = 'false';
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="text" id="spec-brand" placeholder="Marca Compatible">
+                <input type="text" id="spec-material" placeholder="Material / Tipo">
+            </div>
+        `;
+    } else {
+        container.innerHTML = '<p style="font-size: 0.8rem; color: #555;">Seleccione una categoría...</p>';
+    }
+}
+
+// Escuchar el envío del formulario
+setTimeout(() => {
+    document.getElementById('form-new-product')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const category = document.getElementById('prod-category').value;
+        let specs = {};
+        if (category === 'Celulares') {
+            specs = {
+                ram: document.getElementById('spec-ram')?.value,
+                almacenamiento: document.getElementById('spec-storage')?.value,
+                procesador: document.getElementById('spec-cpu')?.value,
+                pantalla: document.getElementById('spec-screen')?.value
+            };
+        } else {
+            specs = {
+                marca: document.getElementById('spec-brand')?.value,
+                material: document.getElementById('spec-material')?.value
+            };
+        }
+
+        const payload = {
+            sku: document.getElementById('prod-sku').value,
+            nombre: document.getElementById('prod-name').value,
+            categoria: category,
+            precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) },
+            especificaciones: specs,
+            stock_minimo: parseInt(document.getElementById('prod-stock-min').value),
+            requiere_imei: document.getElementById('prod-requires-imei').value === 'true'
+        };
+
+        try {
+            const response = await fetch('/api/inventory/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('¡Producto creado exitosamente!');
+                closeProductModal();
+                loadInventory();
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.error}`);
+            }
+        } catch (error) {
+            alert('Error conectando al servidor.');
+        }
+    });
+}, 500);

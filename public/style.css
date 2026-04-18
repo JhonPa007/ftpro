@@ -59,7 +59,8 @@ nav h1 {
     margin-bottom: 0.5rem;
 }
 
-.nav-link:hover, .nav-link.active {
+.nav-link:hover,
+.nav-link.active {
     background: var(--glass);
     color: var(--neon);
 }
@@ -124,7 +125,8 @@ header {
     margin-bottom: 1.2rem;
 }
 
-input, select {
+input,
+select {
     width: 100%;
     background: #0D1117;
     border: 1px solid var(--glass);
@@ -181,5 +183,33 @@ td {
     font-weight: 700;
 }
 
-.status-low { background: #FF4C2933; color: var(--danger); }
-.status-ok { background: #00D10033; color: var(--success); }
+.status-low {
+    background: #FF4C2933;
+    color: var(--danger);
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 600px;
+}
+
+label {
+    display: block;
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+    color: #8B949E;
+}
