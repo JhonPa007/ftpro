@@ -178,35 +178,8 @@ function calculatePosTotals() {
 }
 
 /**
- * CLIENT SEARCH POS
+ * POS OPERATIONS
  */
-async function handleClientSearchPOS(query) {
-    if (query.length < 2) {
-        document.getElementById('pos-client-results').style.display = 'none';
-        return;
-    }
-    try {
-        const res = await fetch(`/api/crm/clients/search?q=${query}`);
-        const clients = await res.json();
-        const dropdown = document.getElementById('pos-client-results');
-        dropdown.style.display = 'block';
-        dropdown.innerHTML = clients.map(c => `
-            <div class="search-item" onclick="selectClientPOS(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                <strong>${c.nombre}</strong> <br>
-                <small>${c.numero_documento}</small>
-            </div>
-        `).join('');
-    } catch (e) { console.error('Error search client POS:', e); }
-}
-
-function selectClientPOS(client) {
-    selectedClient = client;
-    document.getElementById('pos-client-results').style.display = 'none';
-    document.getElementById('pos-client-search').value = '';
-    document.getElementById('selected-client-info').style.display = 'block';
-    document.getElementById('pos-client-name').innerText = client.nombre;
-    document.getElementById('pos-client-doc').innerText = client.numero_documento;
-}
 
 async function finalizeSale() {
     if (posCart.length === 0) return alert('El carrito está vacío');
@@ -994,12 +967,17 @@ async function handleClientSearchPOS(val) {
     const clients = await res.json();
 
     if (results && clients.length > 0) {
-        results.innerHTML = clients.map(c => `
-            <div class="search-item" onclick='selectClientPOS(${JSON.stringify(c).replace(/'/g, "&apos;")})'>
+        results.innerHTML = '';
+        clients.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'search-item';
+            item.innerHTML = `
                 <strong>${c.nombre}</strong><br>
                 <small>${c.tipo_documento}: ${c.numero_documento}</small>
-            </div>
-        `).join('');
+            `;
+            item.onclick = () => selectClientPOS(c);
+            results.appendChild(item);
+        });
         results.style.display = 'block';
     } else if (results) {
         results.style.display = 'none';
