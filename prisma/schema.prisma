@@ -154,6 +154,8 @@ model Venta {
   id              String   @id @default(uuid())
   numero_venta    Int      @unique @default(autoincrement())
   tipo_documento  String   @default("BOLETA")
+  serie           String?  // Ej: B001, F001, NV01
+  correlativo     Int?     
   clienteId       String
   cliente         Cliente  @relation(fields: [clienteId], references: [id])
   total           Decimal  @db.Decimal(10, 2)

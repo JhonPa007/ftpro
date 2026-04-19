@@ -15,11 +15,24 @@ export class SaleService {
         const total = data.items.reduce((acc, item) => acc + (item.cantidad * item.precio_unit), 0);
 
         return await prisma.$transaction(async (tx) => {
+            // 0. Determinar Serie y Correlativo
+            let serie = 'NV01';
+            if (data.tipo_documento === 'BOLETA') serie = 'B001';
+            if (data.tipo_documento === 'FACTURA') serie = 'F001';
+
+            const lastVenta = await (tx as any).venta.findFirst({
+                where: { serie },
+                orderBy: { correlativo: 'desc' }
+            });
+            const correlativo = (lastVenta?.correlativo || 0) + 1;
+
             // 1. Crear Venta
             const venta = await (tx as any).venta.create({
                 data: {
                     clienteId: data.clienteId,
                     tipo_documento: data.tipo_documento,
+                    serie,
+                    correlativo,
                     total: total,
                     detalles: {
                         create: data.items.map(item => ({
@@ -119,9 +132,21 @@ export class SaleService {
     }
 
     async updateSaleType(id: string, newType: string) {
-        return await (prisma as any).venta.update({
-            where: { id },
-            data: { tipo_documento: newType }
+        return await prisma.$transaction(async (tx: any) => {
+            let serie = 'NV01';
+            if (newType === 'BOLETA') serie = 'B001';
+            if (newType === 'FACTURA') serie = 'F001';
+
+            const lastVenta = await tx.venta.findFirst({
+                where: { serie },
+                orderBy: { correlativo: 'desc' }
+            });
+            const correlativo = (lastVenta?.correlativo || 0) + 1;
+
+            return await tx.venta.update({
+                where: { id },
+                data: { tipo_documento: newType, serie, correlativo }
+            });
         });
     }
 }

@@ -1015,7 +1015,7 @@ async function loadSalesHistory() {
 
         tbody.innerHTML = sales.map(s => `
             <tr>
-                <td>#${String(s.numero_venta).padStart(6, '0')}</td>
+                <td>${s.serie ? `${s.serie}-${String(s.correlativo).padStart(6, '0')}` : `#${String(s.numero_venta).padStart(6, '0')}`}</td>
                 <td>${new Date(s.created_at).toLocaleString()}</td>
                 <td>${s.cliente?.nombre || 'General'}</td>
                 <td>${s.tipo_documento}</td>
@@ -1025,10 +1025,10 @@ async function loadSalesHistory() {
                     <div style="display: flex; gap: 5px;">
                         <button class="btn-micro" onclick="printSale('${s.id}')" title="Imprimir"><i class="fas fa-print"></i></button>
                         ${s.tipo_documento === 'NOTA' ? `
-                            <button class="btn-micro" onclick="swapSaleType('${s.id}', 'BOLETA')" title="Canjear por Boleta" style="color: var(--warning);">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
+                            <button class="btn-micro" onclick="swapSaleType('${s.id}', 'BOLETA')" title="Canjear por Boleta" style="color: var(--warning);">B</button>
+                            <button class="btn-micro" onclick="swapSaleType('${s.id}', 'FACTURA')" title="Canjear por Factura" style="color: var(--neon-purple);">F</button>
                         ` : ''}
+                        <button class="btn-micro" onclick="editSale('${s.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         <button class="btn-micro" onclick="deleteSale('${s.id}')" title="Eliminar" style="color: var(--danger);">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -1071,6 +1071,11 @@ async function deleteSale(id) {
             alert(`❌ Error: ${err.error}`);
         }
     } catch (e) { alert('❌ Error de conexión'); }
+}
+
+async function editSale(id) {
+    alert('📝 Cargando datos de la venta para edición... (Módulo en desarrollo)');
+    // Aquí se cargaría la venta en el POS para modificarla
 }
 
 // Cerrar dropdowns al hacer clic fuera
