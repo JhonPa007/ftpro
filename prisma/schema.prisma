@@ -158,11 +158,26 @@ model Venta {
   correlativo     Int?     
   clienteId       String
   cliente         Cliente  @relation(fields: [clienteId], references: [id])
+  sucursalId      String?
+  sucursal        Sucursal? @relation(fields: [sucursalId], references: [id])
   total           Decimal  @db.Decimal(10, 2)
   estado_pago     String   @default("PAGADO")
   detalles        DetalleVenta[]
   created_at      DateTime @default(now())
   @@map("ventas")
+}
+
+model Sucursal {
+  id            String   @id @default(uuid())
+  nombre        String
+  direccion     String?
+  ubigeo        String?
+  serie_boleta  String   @default("B001")
+  serie_factura String   @default("F001")
+  serie_nota    String   @default("NV01")
+  activo        Boolean  @default(true)
+  ventas        Venta[]
+  @@map("sucursales")
 }
 
 model DetalleVenta {

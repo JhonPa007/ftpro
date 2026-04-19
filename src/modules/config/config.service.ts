@@ -23,4 +23,23 @@ export class ConfigService {
             update: data
         });
     }
+
+    async getSucursales() {
+        return await (prisma as any).sucursal.findMany({
+            orderBy: { nombre: 'asc' }
+        });
+    }
+
+    async updateSucursal(id: string, data: any) {
+        return await (prisma as any).sucursal.update({
+            where: { id },
+            data
+        });
+    }
+
+    async createSucursal(data: any) {
+        return await (prisma as any).sucursal.create({
+            data
+        });
+    }
 }

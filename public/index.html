@@ -200,6 +200,17 @@
                     <p style="font-size: 0.7rem; color: var(--text-muted);">Esta llave permite la comunicación para la
                         emisión de boletas y facturas electrónicas.</p>
                 </div>
+
+                <!-- Sucursales y Series -->
+                <div class="card" style="grid-column: span 2;">
+                    <h3>Gestión de Sucursales y Series</h3>
+                    <div id="sucursales-container"
+                        style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                        <!-- Dinámico por JS -->
+                    </div>
+                    <button class="btn-secondary" onclick="addNewSucursalUI()" style="margin-top: 1rem;">+ Añadir
+                        Sucursal</button>
+                </div>
             </div>
         </div>
 
@@ -295,6 +306,7 @@
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
 

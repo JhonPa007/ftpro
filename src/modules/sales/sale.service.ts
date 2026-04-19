@@ -15,10 +15,17 @@ export class SaleService {
         const total = data.items.reduce((acc, item) => acc + (item.cantidad * item.precio_unit), 0);
 
         return await prisma.$transaction(async (tx) => {
-            // 0. Determinar Serie y Correlativo
-            let serie = 'NV01';
-            if (data.tipo_documento === 'BOLETA') serie = 'B001';
-            if (data.tipo_documento === 'FACTURA') serie = 'F001';
+            // 0. Obtener o Crear Sucursal por defecto
+            let sucursal = await (tx as any).sucursal.findFirst();
+            if (!sucursal) {
+                sucursal = await (tx as any).sucursal.create({
+                    data: { nombre: 'Sucursal Central', direccion: 'Dirección General' }
+                });
+            }
+
+            let serie = sucursal.serie_nota;
+            if (data.tipo_documento === 'BOLETA') serie = sucursal.serie_boleta;
+            if (data.tipo_documento === 'FACTURA') serie = sucursal.serie_factura;
 
             const lastVenta = await (tx as any).venta.findFirst({
                 where: { serie },
@@ -33,6 +40,7 @@ export class SaleService {
                     tipo_documento: data.tipo_documento,
                     serie,
                     correlativo,
+                    sucursalId: sucursal.id,
                     total: total,
                     detalles: {
                         create: data.items.map(item => ({
@@ -136,6 +144,11 @@ export class SaleService {
             const oldSale = await tx.venta.findUnique({ where: { id }, include: { detalles: true } });
             if (!oldSale) throw new Error('Venta no encontrada');
 
+            let sucursal = await tx.sucursal.findFirst();
+            if (!sucursal) {
+                sucursal = await tx.sucursal.create({ data: { nombre: 'Sucursal Central' } });
+            }
+
             // 1. Revertir inventario de la venta anterior
             for (const det of oldSale.detalles) {
                 if (det.unitId) {
@@ -197,9 +210,12 @@ export class SaleService {
 
     async updateSaleType(id: string, newType: string) {
         return await prisma.$transaction(async (tx: any) => {
-            let serie = 'NV01';
-            if (newType === 'BOLETA') serie = 'B001';
-            if (newType === 'FACTURA') serie = 'F001';
+            let sucursal = await tx.sucursal.findFirst();
+            if (!sucursal) sucursal = await tx.sucursal.create({ data: { nombre: 'Sucursal Central' } });
+
+            let serie = sucursal.serie_nota;
+            if (newType === 'BOLETA') serie = sucursal.serie_boleta;
+            if (newType === 'FACTURA') serie = sucursal.serie_factura;
 
             const lastVenta = await tx.venta.findFirst({
                 where: { serie },

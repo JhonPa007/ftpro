@@ -330,6 +330,7 @@ function showModule(moduleId) {
     if (moduleId === 'inventory') loadInventory();
     if (moduleId === 'pos') renderCart();
     if (moduleId === 'sales-history') loadSalesHistory();
+    if (moduleId === 'config') loadSucursales();
 }
 
 function switchTab(tabId) {
@@ -1115,6 +1116,65 @@ async function editSale(id) {
         console.error(e);
         alert('❌ Error al cargar la venta para edición');
     }
+}
+
+/**
+ * CONFIG: SUCURSALES
+ */
+async function loadSucursales() {
+    const container = document.getElementById('sucursales-container');
+    if (!container) return;
+    try {
+        const res = await fetch('/api/config/sucursales');
+        const list = await res.json();
+        container.innerHTML = list.map(s => `
+            <div class="card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 10px;">
+                <div class="form-group">
+                    <label>Nombre Sucursal</label>
+                    <input type="text" class="input-glow" value="${s.nombre}" onchange="updateSucursal('${s.id}', {nombre: this.value})">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem;">Serie Bol.</label>
+                        <input type="text" class="input-glow" value="${s.serie_boleta}" onchange="updateSucursal('${s.id}', {serie_boleta: this.value})">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem;">Serie Fac.</label>
+                        <input type="text" class="input-glow" value="${s.serie_factura}" onchange="updateSucursal('${s.id}', {serie_factura: this.value})">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem;">Serie Nota</label>
+                        <input type="text" class="input-glow" value="${s.serie_nota}" onchange="updateSucursal('${s.id}', {serie_nota: this.value})">
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function addNewSucursalUI() {
+    const nombre = prompt('Nombre de la nueva sucursal:');
+    if (!nombre) return;
+    try {
+        const res = await fetch('/api/config/sucursales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre })
+        });
+        if (res.ok) {
+            loadSucursales();
+        }
+    } catch (e) { alert('Error al crear sucursal'); }
+}
+
+async function updateSucursal(id, data) {
+    try {
+        await fetch(`/api/config/sucursales/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    } catch (e) { console.error('Error al actualizar sucursal'); }
 }
 
 // Cerrar dropdowns al hacer clic fuera
