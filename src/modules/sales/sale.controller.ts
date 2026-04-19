@@ -30,4 +30,9 @@ router.patch('/:id/type', async (req, res) => {
     catch (err: any) { res.status(400).json({ error: err.message }); }
 });
 
+router.put('/:id', async (req, res) => {
+    try { res.json(await saleService.updateSale(req.params.id, req.body)); }
+    catch (err: any) { res.status(400).json({ error: err.message }); }
+});
+
 export default router;

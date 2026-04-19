@@ -131,6 +131,70 @@ export class SaleService {
         });
     }
 
+    async updateSale(id: string, data: any) {
+        return await prisma.$transaction(async (tx: any) => {
+            const oldSale = await tx.venta.findUnique({ where: { id }, include: { detalles: true } });
+            if (!oldSale) throw new Error('Venta no encontrada');
+
+            // 1. Revertir inventario de la venta anterior
+            for (const det of oldSale.detalles) {
+                if (det.unitId) {
+                    await tx.itemInventario.update({ where: { id: det.unitId }, data: { estado_inventario: 'Disponible' } });
+                } else {
+                    const lastSold = await tx.itemInventario.findMany({
+                        where: { productoId: det.productoId, estado_inventario: 'Vendido', imei: null },
+                        orderBy: { created_at: 'desc' },
+                        take: det.cantidad
+                    });
+                    await tx.itemInventario.updateMany({
+                        where: { id: { in: lastSold.map((u: any) => u.id) } },
+                        data: { estado_inventario: 'Disponible' }
+                    });
+                }
+            }
+
+            // 2. Eliminar detalles viejos
+            await tx.detalleVenta.deleteMany({ where: { ventaId: id } });
+
+            // 3. Procesar nuevos items (igual que en createSale)
+            const total = data.items.reduce((acc: number, item: any) => acc + (item.cantidad * item.precio_unit), 0);
+
+            for (const item of data.items) {
+                if (item.unitId) {
+                    await tx.itemInventario.update({ where: { id: item.unitId }, data: { estado_inventario: 'Vendido' } });
+                } else {
+                    const availableUnits = await tx.itemInventario.findMany({
+                        where: { productoId: item.productoId, estado_inventario: 'Disponible', imei: null },
+                        take: item.cantidad
+                    });
+                    if (availableUnits.length < item.cantidad) throw new Error(`Stock insuficiente para ${item.productoId}`);
+                    await tx.itemInventario.updateMany({
+                        where: { id: { in: availableUnits.map((u: any) => u.id) } },
+                        data: { estado_inventario: 'Vendido' }
+                    });
+                }
+            }
+
+            // 4. Actualizar cabecera y crear nuevos detalles
+            return await tx.venta.update({
+                where: { id },
+                data: {
+                    clienteId: data.clienteId,
+                    total: total,
+                    tipo_documento: data.tipo_documento,
+                    detalles: {
+                        create: data.items.map((item: any) => ({
+                            productoId: item.productoId,
+                            unitId: item.unitId,
+                            cantidad: item.cantidad,
+                            precio_unit: item.precio_unit
+                        }))
+                    }
+                }
+            });
+        });
+    }
+
     async updateSaleType(id: string, newType: string) {
         return await prisma.$transaction(async (tx: any) => {
             let serie = 'NV01';

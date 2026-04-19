@@ -180,6 +180,7 @@ function calculatePosTotals() {
 /**
  * POS OPERATIONS
  */
+let editingSaleId = null;
 
 async function finalizeSale() {
     if (posCart.length === 0) return alert('El carrito está vacío');
@@ -198,8 +199,11 @@ async function finalizeSale() {
     };
 
     try {
-        const res = await fetch('/api/sales/pos', {
-            method: 'POST',
+        const url = editingSaleId ? `/api/sales/${editingSaleId}` : '/api/sales/pos';
+        const method = editingSaleId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
@@ -210,6 +214,7 @@ async function finalizeSale() {
             selectedClient = null;
             document.getElementById('selected-client-info').style.display = 'none';
             renderCart();
+            editingSaleId = null; // Limpiar estado de edición
             showModule('dashboard');
         } else {
             const err = await res.json();
@@ -1074,8 +1079,42 @@ async function deleteSale(id) {
 }
 
 async function editSale(id) {
-    alert('📝 Cargando datos de la venta para edición... (Módulo en desarrollo)');
-    // Aquí se cargaría la venta en el POS para modificarla
+    try {
+        const res = await fetch(`/api/sales/${id}`);
+        if (!res.ok) throw new Error('No se pudo cargar la venta');
+        const sale = await res.json();
+
+        // 1. Cargar cliente
+        selectedClient = sale.cliente;
+        const infoEl = document.getElementById('selected-client-info');
+        if (infoEl) {
+            infoEl.innerHTML = `
+                <div style="padding: 10px; background: rgba(0,255,242,0.1); border: 1px solid var(--neon); border-radius: 8px;">
+                    <strong style="color: var(--neon);">${sale.cliente.nombre}</strong><br>
+                    <small>${sale.cliente.tipo_documento}: ${sale.cliente.numero_documento}</small>
+                </div>
+            `;
+            infoEl.style.display = 'block';
+        }
+
+        // 2. Cargar carrito
+        posCart = sale.detalles.map(d => ({
+            id: d.productoId,
+            nombre: d.producto.nombre,
+            precio: parseFloat(d.precio_unit),
+            cantidad: d.cantidad,
+            unitId: d.unitId,
+            imei: d.imei || ''
+        }));
+
+        editingSaleId = id;
+        renderCart();
+        showModule('pos');
+        alert('📝 Modo edición activado. Puedes modificar los items y volver a guardar.');
+    } catch (e) {
+        console.error(e);
+        alert('❌ Error al cargar la venta para edición');
+    }
 }
 
 // Cerrar dropdowns al hacer clic fuera
