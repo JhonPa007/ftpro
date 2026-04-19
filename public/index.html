@@ -30,6 +30,10 @@
             <a href="#" class="nav-link" onclick="showModule('pos')" data-module="pos">
                 <i class="fas fa-shopping-cart"></i> <span>Punto de Venta</span>
             </a>
+            <a href="#" class="nav-link sublink" onclick="showModule('sales-history')" data-module="pos"
+                style="padding-left: 2.5rem; font-size: 0.85rem; opacity: 0.8;">
+                <i class="fas fa-history"></i> <span>Historial Ventas</span>
+            </a>
             <a href="#" class="nav-link" onclick="showModule('inventory')" data-module="inventory">
                 <i class="fas fa-boxes"></i> <span>Inventario</span>
             </a>
@@ -290,6 +294,37 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- MODULO: HISTORIAL DE VENTAS -->
+        <div id="module-sales-history" class="module" style="display: none;">
+            <div class="top-bar">
+                <h2><i class="fas fa-history"></i> Historial de Ventas</h2>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="date" id="history-date-filter" class="input-glow" style="width: 200px;">
+                    <button class="btn-primary" onclick="loadSalesHistory()"><i class="fas fa-search"></i>
+                        Filtrar</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th># Venta</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Tipo Doc</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales-history-body">
+                        <!-- Data por JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 

@@ -300,7 +300,7 @@ function updateClock() {
 }
 
 function showModule(moduleId) {
-    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config'];
+    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config', 'sales-history'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
         if (el) {
@@ -323,7 +323,8 @@ function showModule(moduleId) {
 
     if (moduleId === 'dashboard') updateDashboardStats();
     if (moduleId === 'inventory') loadInventory();
-    if (moduleId === 'pos') renderCart(); // Asegurar que el carrito se pinte si se cambió de pestaña
+    if (moduleId === 'pos') renderCart();
+    if (moduleId === 'sales-history') loadSalesHistory();
 }
 
 function switchTab(tabId) {
@@ -999,6 +1000,77 @@ function selectClientPOS(client) {
     if (nameEl) nameEl.innerText = client.nombre;
     if (docEl) docEl.innerText = `${client.tipo_documento}: ${client.numero_documento}`;
     if (infoEl) infoEl.style.display = 'block';
+}
+
+/**
+ * SALES HISTORY
+ */
+async function loadSalesHistory() {
+    const tbody = document.getElementById('sales-history-body');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/sales');
+        const sales = await res.json();
+
+        tbody.innerHTML = sales.map(s => `
+            <tr>
+                <td>#${String(s.numero_venta).padStart(6, '0')}</td>
+                <td>${new Date(s.created_at).toLocaleString()}</td>
+                <td>${s.cliente?.nombre || 'General'}</td>
+                <td>${s.tipo_documento}</td>
+                <td class="text-neon">S/ ${parseFloat(s.total).toFixed(2)}</td>
+                <td><span class="badge badge-primary">${s.estado_pago}</span></td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-micro" onclick="printSale('${s.id}')" title="Imprimir"><i class="fas fa-print"></i></button>
+                        ${s.tipo_documento === 'NOTA' ? `
+                            <button class="btn-micro" onclick="swapSaleType('${s.id}', 'BOLETA')" title="Canjear por Boleta" style="color: var(--warning);">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn-micro" onclick="deleteSale('${s.id}')" title="Eliminar" style="color: var(--danger);">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Error loading sales:', e); }
+}
+
+async function printSale(id) {
+    alert('🖨️ Generando PDF del comprobante... (Módulo en desarrollo)');
+    // Aquí se integraría con una librería como jspdf o un endpoint que devuelva el PDF
+}
+
+async function swapSaleType(id, newType) {
+    if (!confirm(`¿Desea canjear este documento por una ${newType}?`)) return;
+    try {
+        const res = await fetch(`/api/sales/${id}/type`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo: newType })
+        });
+        if (res.ok) {
+            alert('✅ Comprobante canjeado exitosamente');
+            loadSalesHistory();
+        }
+    } catch (e) { alert('❌ Error al canjear'); }
+}
+
+async function deleteSale(id) {
+    if (!confirm('⚠️ ¿Está seguro de eliminar esta venta? El stock se restaurará.')) return;
+    try {
+        const res = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            alert('✅ Venta eliminada y Stock restaurado');
+            loadSalesHistory();
+        } else {
+            const err = await res.json();
+            alert(`❌ Error: ${err.error}`);
+        }
+    } catch (e) { alert('❌ Error de conexión'); }
 }
 
 // Cerrar dropdowns al hacer clic fuera
