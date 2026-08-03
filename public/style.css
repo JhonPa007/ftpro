@@ -467,3 +467,16 @@ select option {
     background: var(--glass);
     color: #fff;
 }
+
+/* ESTILOS PARA LISTA DE MAESTROS */
+.cfg-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.cfg-list li span {
+    font-weight: 400 !important;
+}

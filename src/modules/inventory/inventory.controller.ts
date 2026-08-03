@@ -61,4 +61,9 @@ router.get('/pos-search', async (req, res) => {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
 });
 
+router.get('/products/:id/imeis', async (req, res) => {
+    try { res.json(await inventoryService.getAvailableImeis(req.params.id)); }
+    catch (error: any) { res.status(500).json({ error: error.message }); }
+});
+
 export default router;

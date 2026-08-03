@@ -58,7 +58,13 @@ async function loadConfig() {
 
         // Apply Modularity
         if (cfg.modulos) {
-            const activeModules = typeof cfg.modulos === 'string' ? JSON.parse(cfg.modulos) : cfg.modulos;
+            let activeModules = typeof cfg.modulos === 'string' ? JSON.parse(cfg.modulos) : cfg.modulos;
+            
+            // Retrocompatibilidad: Activar financed-sales si la configuración es previa y tiene pos activo
+            if (Array.isArray(activeModules) && !activeModules.includes('financed-sales') && activeModules.includes('pos')) {
+                activeModules.push('financed-sales');
+            }
+
             document.querySelectorAll('.nav-link').forEach(link => {
                 const mod = link.dataset.module;
                 if (mod === 'dashboard' || mod === 'config' || activeModules.includes(mod)) {
@@ -305,7 +311,7 @@ function updateClock() {
 }
 
 function showModule(moduleId) {
-    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config', 'sales-history'];
+    const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config', 'sales-history', 'financed-sales'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
         if (el) {
@@ -331,6 +337,7 @@ function showModule(moduleId) {
     if (moduleId === 'pos') renderCart();
     if (moduleId === 'sales-history') loadSalesHistory();
     if (moduleId === 'config') loadSucursales();
+    if (moduleId === 'financed-sales') loadFinancedSales();
 }
 
 function switchTab(tabId) {
@@ -672,12 +679,37 @@ function initFormListeners() {
         const brandSel = document.getElementById('prod-brand');
         const nameInput = document.getElementById('prod-name');
 
-        const cat = catSel.options[catSel.selectedIndex]?.text.substring(0, 3).toUpperCase() || 'XXX';
-        const brand = brandSel.options[brandSel.selectedIndex]?.text.substring(0, 3).toUpperCase() || 'XXX';
-        const name = nameInput.value.substring(0, 3).toUpperCase() || 'XXX';
+        const catText = catSel.options[catSel.selectedIndex]?.text || '';
+        const brandText = brandSel.options[brandSel.selectedIndex]?.text || '';
+        const nameText = nameInput.value || '';
 
-        document.getElementById('prod-sku').value = `${cat}-${brand}-${name}`.replace(/Sele/gi, 'XXX');
+        // Si no se ha ingresado nada significativo, dejamos un placeholder amigable o vacío
+        if (!catText || catText === 'Seleccione...' && !brandText || brandText === 'Seleccione...' && !nameText) {
+            return;
+        }
+
+        const catPart = catText && catText !== 'Seleccione...' ? catText.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase() : 'GEN';
+        const brandPart = brandText && brandText !== 'Seleccione...' ? brandText.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase() : 'GEN';
+        
+        let namePart = 'PROD';
+        if (nameText) {
+            const cleanName = nameText.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase().split(/\s+/).filter(Boolean);
+            if (cleanName.length >= 2) {
+                // Primera letra de las dos primeras palabras + dos caracteres de la primera
+                namePart = (cleanName[0].substring(0, 2) + cleanName[1].substring(0, 2)).padEnd(4, 'X');
+            } else if (cleanName.length === 1) {
+                namePart = cleanName[0].substring(0, 4).padEnd(4, 'X');
+            }
+        }
+
+        // Generar un correlativo numérico aleatorio único de 4 dígitos
+        // para asegurar la no duplicidad de los SKU
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+
+        document.getElementById('prod-sku').value = `${catPart}-${brandPart}-${namePart}-${randomPart}`;
     };
+
+    window.generateSku = updateSku;
 
     document.getElementById('prod-category')?.addEventListener('change', updateSku);
     document.getElementById('prod-brand')?.addEventListener('change', updateSku);
@@ -914,6 +946,90 @@ function initFormListeners() {
             alert('✅ Cliente guardado');
             document.getElementById('modal-client').style.display = 'none';
             if (typeof selectClientPOS === 'function') selectClientPOS(client);
+        }
+    });
+
+    // FORM VENTAS FINANCIADAS (CUOTAS)
+    document.getElementById('form-financed-sale')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = 'Registrando...';
+        btn.disabled = true;
+
+        try {
+            const clienteId = document.getElementById('fin-clienteId').value;
+            const productId = document.getElementById('fin-productId').value;
+            const imeiSelect = document.getElementById('fin-imei');
+            const unitId = imeiSelect.value;
+            
+            const precioVenta = parseFloat(document.getElementById('fin-price').value) || 0;
+            const cuotaInicial = parseFloat(document.getElementById('fin-inicial').value) || 0;
+            const cantidadCuotas = parseInt(document.getElementById('fin-cuotas-qty').value) || 0;
+            const frecuencia = document.getElementById('fin-frecuencia').value;
+            const cuotaMonto = parseFloat(document.getElementById('fin-cuota-monto').value) || 0;
+
+            const financiera = document.getElementById('fin-financiera').value;
+            const celular_cliente = document.getElementById('fin-client-phone').value;
+            const celular_referencia = document.getElementById('fin-reference-phone').value;
+
+            // Construir el cronograma para guardarlo en la DB
+            const cronograma = [];
+            let currentDate = new Date();
+            for (let i = 1; i <= cantidadCuotas; i++) {
+                if (frecuencia === 'Semanal') currentDate.setDate(currentDate.getDate() + 7);
+                else if (frecuencia === 'Quincenal') currentDate.setDate(currentDate.getDate() + 15);
+                else if (frecuencia === 'Mensual') currentDate.setMonth(currentDate.getMonth() + 1);
+
+                cronograma.push({
+                    nro: i,
+                    fecha: currentDate.toISOString().split('T')[0],
+                    monto: cuotaMonto
+                });
+            }
+
+            const payload = {
+                clienteId,
+                tipo_documento: 'NOTA', 
+                items: [{
+                    productoId: productId,
+                    unitId: unitId || undefined,
+                    cantidad: 1,
+                    precio_unit: precioVenta
+                }],
+                ventaFinanciada: {
+                    financiera,
+                    celular_cliente,
+                    celular_referencia,
+                    cuota_inicial: cuotaInicial,
+                    monto_cuota: cuotaMonto,
+                    cantidad_cuotas: cantidadCuotas,
+                    frecuencia_pago: frecuencia,
+                    cronograma: cronograma
+                }
+            };
+
+            const res = await fetch('/api/sales/pos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert('✅ Venta financiada registrada correctamente');
+                e.target.reset();
+                document.getElementById('fin-cronograma-body').innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Completa los datos de la venta para simular el cronograma</td></tr>';
+                switchFinancedTab('tracking');
+            } else {
+                const err = await res.json();
+                alert(`❌ Error: ${err.error || 'No se pudo guardar la venta'}`);
+            }
+        } catch (error) {
+            console.error('Error en registro:', error);
+            alert('❌ Error al procesar la venta financiada');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     });
 }
@@ -1176,6 +1292,240 @@ async function updateSucursal(id, data) {
         });
     } catch (e) { console.error('Error al actualizar sucursal'); }
 }
+
+/* MÓDULO VENTAS EN CUOTAS (FINANCIADAS) */
+async function switchFinancedTab(tabId) {
+    document.querySelectorAll('.financed-tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#module-financed-sales .tab-link').forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(`tab-financed-${tabId}`).style.display = 'block';
+    const activeBtn = Array.from(document.querySelectorAll('#module-financed-sales .tab-link')).find(btn => btn.getAttribute('onclick').includes(tabId));
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (tabId === 'tracking') {
+        loadFinancedSales();
+    }
+}
+
+window.switchFinancedTab = switchFinancedTab;
+
+// Búsqueda de clientes para Ventas Financiadas
+async function handleClientSearchFinanced(query) {
+    if (query.length < 3) {
+        document.getElementById('fin-client-results').style.display = 'none';
+        return;
+    }
+    try {
+        const res = await fetch(`/api/crm/clients/search?q=${query}`);
+        const results = await res.json();
+        const dropdown = document.getElementById('fin-client-results');
+        if (results.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        dropdown.style.display = 'block';
+        dropdown.innerHTML = results.map(r => `
+            <div class="search-item" onclick="selectClientFinanced('${r.id}', '${r.nombre}', '${r.telefono || ''}')">
+                <strong>${r.nombre}</strong> <br>
+                <small>${r.numero_documento}</small>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error searching clients:', e); }
+}
+
+window.handleClientSearchFinanced = handleClientSearchFinanced;
+
+function selectClientFinanced(id, nombre, telefono) {
+    document.getElementById('fin-clienteId').value = id;
+    document.getElementById('fin-client-name').value = nombre;
+    document.getElementById('fin-client-phone').value = telefono;
+    document.getElementById('fin-client-results').style.display = 'none';
+    document.getElementById('fin-client-search').value = '';
+}
+
+window.selectClientFinanced = selectClientFinanced;
+
+// Búsqueda de productos para Ventas Financiadas
+async function handleProductSearchFinanced(query) {
+    if (query.length < 3) {
+        document.getElementById('fin-product-results').style.display = 'none';
+        return;
+    }
+    try {
+        const res = await fetch(`/api/inventory/pos-search?q=${query}`);
+        const results = await res.json();
+        const dropdown = document.getElementById('fin-product-results');
+        if (results.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        dropdown.style.display = 'block';
+        // Filtrar solo productos
+        const productsOnly = results.filter(r => r.type === 'PRODUCTO');
+        dropdown.innerHTML = productsOnly.map(r => `
+            <div class="search-item" onclick="selectProductFinanced('${r.id}', '${r.nombre}', ${r.precio})">
+                <strong>${r.nombre}</strong> <br>
+                <small>SKU: ${r.sku} | S/ ${r.precio.toFixed(2)}</small>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error searching products:', e); }
+}
+
+window.handleProductSearchFinanced = handleProductSearchFinanced;
+
+async function selectProductFinanced(id, nombre, precio) {
+    document.getElementById('fin-productId').value = id;
+    document.getElementById('fin-product-search').value = nombre;
+    document.getElementById('fin-price').value = precio;
+    document.getElementById('fin-product-results').style.display = 'none';
+
+    // Cargar los IMEIs disponibles para este producto
+    try {
+        const res = await fetch(`/api/inventory/products/${id}/imeis`);
+        const imeis = await res.json();
+        const select = document.getElementById('fin-imei');
+        if (imeis.length === 0) {
+            select.innerHTML = '<option value="">Sin IMEIs disponibles</option>';
+            alert('⚠️ Este producto no tiene IMEIs disponibles en stock. Debes ingresar stock primero.');
+        } else {
+            select.innerHTML = '<option value="">Seleccione IMEI...</option>' +
+                imeis.map(i => `<option value="${i.id}">${i.imei}</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Error loading IMEIs:', e);
+    }
+    calculateFinancing();
+}
+
+window.selectProductFinanced = selectProductFinanced;
+
+// Calcular financiamiento y generar cronograma temporal
+function calculateFinancing() {
+    const price = parseFloat(document.getElementById('fin-price').value) || 0;
+    const inicial = parseFloat(document.getElementById('fin-inicial').value) || 0;
+    const qty = parseInt(document.getElementById('fin-cuotas-qty').value) || 0;
+    const frecuencia = document.getElementById('fin-frecuencia').value;
+
+    const saldo = price - inicial;
+    let cuotaMonto = 0;
+    if (qty > 0 && saldo > 0) {
+        // En una financiera externa se calcula un interés, pero aquí calculamos el valor neto
+        // más un costo de financiamiento simulado del 10%
+        const interesSimulado = 1.10;
+        cuotaMonto = (saldo * interesSimulado) / qty;
+    }
+
+    document.getElementById('fin-cuota-monto').value = cuotaMonto.toFixed(2);
+
+    // Generar cronograma visual
+    const tbody = document.getElementById('fin-cronograma-body');
+    if (qty <= 0 || saldo <= 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Completa los datos de la venta para simular el cronograma</td></tr>';
+        return;
+    }
+
+    let html = '';
+    let currentDate = new Date();
+    for (let i = 1; i <= qty; i++) {
+        // Incrementar fecha según frecuencia
+        if (frecuencia === 'Semanal') currentDate.setDate(currentDate.getDate() + 7);
+        else if (frecuencia === 'Quincenal') currentDate.setDate(currentDate.getDate() + 15);
+        else if (frecuencia === 'Mensual') currentDate.setMonth(currentDate.getMonth() + 1);
+
+        const dateStr = currentDate.toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        html += `
+            <tr>
+                <td>Cuota ${i}</td>
+                <td>${dateStr}</td>
+                <td style="color: var(--neon);">S/ ${cuotaMonto.toFixed(2)}</td>
+            </tr>
+        `;
+    }
+    tbody.innerHTML = html;
+}
+
+window.calculateFinancing = calculateFinancing;
+
+// Cargar listado de ventas financiadas y reembolsos
+async function loadFinancedSales() {
+    try {
+        const res = await fetch('/api/sales/financed');
+        const data = await res.json();
+        const tbody = document.getElementById('financed-list-body');
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No se encontraron ventas financiadas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => {
+            const venta = item.venta || {};
+            const cliente = venta.cliente || {};
+            const detalle = (venta.detalles && venta.detalles[0]) || {};
+            const producto = detalle.producto || {};
+            const fecha = new Date(item.created_at).toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            
+            const precioTotal = parseFloat(venta.total) || 0;
+            const inicial = parseFloat(item.cuota_inicial) || 0;
+            const porCobrar = precioTotal - inicial;
+
+            const badgeClass = item.estado_reembolso === 'COBRADO' ? 'success' : 'warning';
+            const actionBtn = item.estado_reembolso === 'PENDIENTE' 
+                ? `<button onclick="confirmReimbursement('${item.id}')" class="btn-micro" style="background: var(--success); color: #000; border: none; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer;">Confirmar Cobro</button>`
+                : `<span style="font-size: 0.8rem; color: var(--text-muted);">Completado</span>`;
+
+            const fechaDep = item.fecha_reembolso 
+                ? new Date(item.fecha_reembolso).toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' }) 
+                : '-';
+
+            return `
+                <tr>
+                    <td>${fecha}</td>
+                    <td>
+                        <strong>${cliente.nombre || 'N/A'}</strong> <br>
+                        <small>${cliente.numero_documento || ''}</small>
+                    </td>
+                    <td><span class="badge badge-secondary">${item.financiera}</span></td>
+                    <td>
+                        ${producto.nombre || 'N/A'} <br>
+                        <small>IMEI: ${detalle.unitId ? 'Enlazado' : 'Genérico'}</small>
+                    </td>
+                    <td>S/ ${precioTotal.toFixed(2)}</td>
+                    <td>S/ ${inicial.toFixed(2)}</td>
+                    <td style="color: var(--neon); font-weight: bold;">S/ ${porCobrar.toFixed(2)}</td>
+                    <td><span class="status-badge ${badgeClass}">${item.estado_reembolso}</span></td>
+                    <td>${fechaDep}</td>
+                    <td>${actionBtn}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading financed sales:', e);
+    }
+}
+
+window.loadFinancedSales = loadFinancedSales;
+
+// Confirmar reembolso de la financiera
+async function confirmReimbursement(id) {
+    if (!confirm('¿Estás seguro de que la empresa financiera ha depositado el monto neto de esta venta en tu cuenta?')) return;
+    try {
+        const res = await fetch(`/api/sales/financed/${id}/reimburse`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado_reembolso: 'COBRADO' })
+        });
+        if (res.ok) {
+            alert('✅ Reembolso registrado y conciliado correctamente');
+            loadFinancedSales();
+        } else {
+            alert('❌ Error al registrar reembolso');
+        }
+    } catch (e) {
+        alert('❌ Error de conexión al registrar reembolso');
+    }
+}
+
+window.confirmReimbursement = confirmReimbursement;
 
 // Cerrar dropdowns al hacer clic fuera
 document.addEventListener('click', (e) => {

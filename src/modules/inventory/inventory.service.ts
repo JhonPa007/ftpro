@@ -277,4 +277,18 @@ export class InventoryService {
             requiere_imei: p.requiere_imei
         }));
     }
+
+    async getAvailableImeis(productoId: string) {
+        return await (prisma as any).itemInventario.findMany({
+            where: {
+                productoId,
+                estado_inventario: 'Disponible',
+                imei: { not: null }
+            },
+            select: {
+                id: true,
+                imei: true
+            }
+        });
+    }
 }

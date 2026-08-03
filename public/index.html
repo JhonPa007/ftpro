@@ -34,6 +34,9 @@
                 style="padding-left: 2.5rem; font-size: 0.85rem; opacity: 0.8;">
                 <i class="fas fa-history"></i> <span>Historial Ventas</span>
             </a>
+            <a href="#" class="nav-link" onclick="showModule('financed-sales')" data-module="financed-sales">
+                <i class="fas fa-hand-holding-usd"></i> <span>Ventas en Cuotas</span>
+            </a>
             <a href="#" class="nav-link" onclick="showModule('inventory')" data-module="inventory">
                 <i class="fas fa-boxes"></i> <span>Inventario</span>
             </a>
@@ -125,6 +128,9 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                             <input type="checkbox" value="crm" checked> Gestión de Clientes (CRM)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" value="financed-sales" checked> Ventas en Cuotas
                         </label>
                     </div>
                     <button class="btn-primary" style="margin-top: 1.5rem;" onclick="saveModulesConfig()">Actualizar
@@ -444,6 +450,166 @@
                 </p>
             </div>
         </section>
+
+        <!-- MÓDULO: VENTAS EN CUOTAS -->
+        <section id="module-financed-sales" style="display: none;">
+            <div class="top-bar">
+                <h2>Ventas de Equipos en Cuotas (Financiadas)</h2>
+            </div>
+            
+            <div class="inventory-tabs">
+                <button class="tab-link active" onclick="switchFinancedTab('register')">Registrar Venta</button>
+                <button class="tab-link" onclick="switchFinancedTab('tracking')">Seguimiento de Reembolsos</button>
+            </div>
+
+            <!-- SUB-PESTAÑA: REGISTRAR VENTA -->
+            <div id="tab-financed-register" class="financed-tab-content">
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+                    <!-- Formulario de Registro -->
+                    <div class="card">
+                        <h3>Nueva Solicitud de Venta Financiada</h3>
+                        <form id="form-financed-sale" style="margin-top: 1.5rem;">
+                            <!-- Cliente -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group" style="position: relative;">
+                                    <label>Cliente (Buscar por DNI/RUC)</label>
+                                    <input type="text" id="fin-client-search" placeholder="Buscar cliente..." oninput="handleClientSearchFinanced(this.value)">
+                                    <div id="fin-client-results" class="search-dropdown" style="display: none;"></div>
+                                    <input type="hidden" id="fin-clienteId" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Celular del Cliente</label>
+                                    <input type="text" id="fin-client-phone" required placeholder="987654321">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label>Nombre del Cliente Seleccionado</label>
+                                    <input type="text" id="fin-client-name" readonly placeholder="Ninguno" style="background: rgba(255,255,255,0.02);">
+                                </div>
+                                <div class="form-group">
+                                    <label>Celular de Referencia</label>
+                                    <input type="text" id="fin-reference-phone" required placeholder="987654321">
+                                </div>
+                            </div>
+
+                            <!-- Equipo / Producto e IMEI -->
+                            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem;">
+                                <div class="form-group" style="position: relative;">
+                                    <label>Equipo / Celular (Buscar)</label>
+                                    <input type="text" id="fin-product-search" placeholder="Ingresa nombre, modelo..." oninput="handleProductSearchFinanced(this.value)">
+                                    <div id="fin-product-results" class="search-dropdown" style="display: none;"></div>
+                                    <input type="hidden" id="fin-productId" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>IMEI del Equipo</label>
+                                    <select id="fin-imei" required>
+                                        <option value="">Seleccione IMEI...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Financiamiento -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label>Empresa Financiera</label>
+                                    <select id="fin-financiera" required>
+                                        <option value="PayJoy">PayJoy</option>
+                                        <option value="Galgo">Galgo</option>
+                                        <option value="CrediEfectiva">CrediEfectiva</option>
+                                        <option value="Financiera Efectiva">Financiera Efectiva</option>
+                                        <option value="Otro">Otro Financiamiento</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Precio Venta Equipo (S/)</label>
+                                    <input type="number" id="fin-price" step="0.01" required oninput="calculateFinancing()">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label>Cuota Inicial (S/)</label>
+                                    <input type="number" id="fin-inicial" step="0.01" required oninput="calculateFinancing()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Cantidad de Cuotas</label>
+                                    <input type="number" id="fin-cuotas-qty" value="12" required oninput="calculateFinancing()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Frecuencia de Pago</label>
+                                    <select id="fin-frecuencia" onchange="calculateFinancing()">
+                                        <option value="Semanal">Semanal (Más habitual)</option>
+                                        <option value="Quincenal">Quincenal</option>
+                                        <option value="Mensual">Mensual</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Monto de Cuota Estimado (S/)</label>
+                                <input type="number" id="fin-cuota-monto" step="0.01" required placeholder="0.00">
+                            </div>
+
+                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">
+                                <i class="fas fa-save"></i> Registrar Venta Financiada
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Cronograma Visual -->
+                    <div class="card" style="display: flex; flex-direction: column;">
+                        <h3>Cronograma de Pago Sugerido</h3>
+                        <div style="flex: 1; overflow-y: auto; max-height: 480px; margin-top: 1.5rem; background: rgba(0,0,0,0.1); border-radius: 10px; padding: 1rem;">
+                            <table class="inventory-table" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>N° Cuota</th>
+                                        <th>Fecha Vencimiento</th>
+                                        <th>Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fin-cronograma-body">
+                                    <!-- Dinámico -->
+                                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Completa los datos de la venta para simular el cronograma</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-PESTAÑA: SEGUIMIENTO DE REEMBOLSOS -->
+            <div id="tab-financed-tracking" class="financed-tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3>Cuentas por Cobrar a Financieras</h3>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Nota: La financiera nos deposita el total restando la inicial (normalmente al día siguiente).</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Venta</th>
+                                    <th>Cliente</th>
+                                    <th>Financiera</th>
+                                    <th>Equipo (IMEI)</th>
+                                    <th>P. Venta</th>
+                                    <th>Inicial</th>
+                                    <th>Por Cobrar (Neto)</th>
+                                    <th>Estado Reembolso</th>
+                                    <th>Fecha Depósito</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financed-list-body">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- MODAL: NUEVA COMPRA (STOCK IN) -->
@@ -511,13 +677,13 @@
 
     <!-- MODAL CONFIGURACIÓN -->
     <div id="modal-config" class="modal" style="display: none;">
-        <div class="modal-content card" style="position: relative;">
+        <div class="modal-content card" style="position: relative; max-width: 950px; width: 100%;">
             <span class="close-modal"
                 onclick="document.getElementById('modal-config').style.display='none'">&times;</span>
-            <h2>Configuración de Maestros</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <h2 style="margin-bottom: 1.5rem;">Configuración de Maestros</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
                 <div>
-                    <h4>Categorías</h4>
+                    <h4 style="margin-bottom: 0.8rem;">Categorías</h4>
                     <div style="display: flex; gap: 5px;">
                         <input type="text" id="cfg-cat-name" placeholder="Nueva Categoría" style="flex: 1;">
                         <button onclick="saveMaster('categories', 'cfg-cat-name')" class="btn-icon"><i
@@ -526,7 +692,7 @@
                     <ul id="cfg-cat-list" class="cfg-list"></ul>
                 </div>
                 <div>
-                    <h4>Marcas</h4>
+                    <h4 style="margin-bottom: 0.8rem;">Marcas</h4>
                     <div style="display: flex; gap: 5px;">
                         <input type="text" id="cfg-brand-name" placeholder="Nueva Marca" style="flex: 1;">
                         <button onclick="saveMaster('brands', 'cfg-brand-name')" class="btn-icon"><i
@@ -534,15 +700,15 @@
                     </div>
                     <ul id="cfg-brand-list" class="cfg-list"></ul>
                 </div>
-            </div>
-            <div style="margin-top: 1rem;">
-                <h4>Características (Atributos)</h4>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="cfg-attr-name" placeholder="Ej: RAM, Color, Procesador" style="flex: 1;">
-                    <button onclick="saveMaster('attributes', 'cfg-attr-name')" class="btn-icon"><i
-                            class="fas fa-plus"></i></button>
+                <div>
+                    <h4 style="margin-bottom: 0.8rem;">Características (Atributos)</h4>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="cfg-attr-name" placeholder="Ej: RAM, Color, Procesador" style="flex: 1;">
+                        <button onclick="saveMaster('attributes', 'cfg-attr-name')" class="btn-icon"><i
+                                class="fas fa-plus"></i></button>
+                    </div>
+                    <ul id="cfg-attr-list" class="cfg-list"></ul>
                 </div>
-                <ul id="cfg-attr-list" class="cfg-list" style="display: flex; flex-wrap: wrap; gap: 5px;"></ul>
             </div>
         </div>
     </div>
@@ -555,7 +721,10 @@
             <form id="form-new-product">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
-                        <label>SKU / Código</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label>SKU / Código</label>
+                            <button type="button" class="btn-micro" onclick="window.generateSku()" style="height: 18px; padding: 0 8px; font-size: 0.7rem; line-height: 1; border-radius: 4px; background: var(--glass); color: var(--neon); border: 1px solid var(--glass-border); cursor: pointer;">Generar</button>
+                        </div>
                         <input type="text" id="prod-sku" required>
                     </div>
                     <div class="form-group">

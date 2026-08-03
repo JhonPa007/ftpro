@@ -15,6 +15,16 @@ router.post('/pos', async (req, res) => {
     catch (err: any) { res.status(400).json({ error: err.message }); }
 });
 
+router.get('/financed', async (req, res) => {
+    try { res.json(await saleService.getFinancedSales()); }
+    catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch('/financed/:id/reimburse', async (req, res) => {
+    try { res.json(await saleService.updateReimbursement(req.params.id, req.body.estado_reembolso)); }
+    catch (err: any) { res.status(400).json({ error: err.message }); }
+});
+
 router.get('/:id', async (req, res) => {
     try { res.json(await saleService.getSaleById(req.params.id)); }
     catch (err: any) { res.status(500).json({ error: err.message }); }

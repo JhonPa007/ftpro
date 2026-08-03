@@ -163,6 +163,7 @@ model Venta {
   total           Decimal  @db.Decimal(10, 2)
   estado_pago     String   @default("PAGADO")
   detalles        DetalleVenta[]
+  ventaFinanciada VentaFinanciada?
   created_at      DateTime @default(now())
   @@map("ventas")
 }
@@ -216,4 +217,26 @@ model Usuario {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
   @@map("usuarios")
+}
+
+model VentaFinanciada {
+  id                 String    @id @default(uuid())
+  ventaId            String    @unique
+  venta              Venta     @relation(fields: [ventaId], references: [id])
+  
+  financiera         String    // Empresa de financiamiento (PayJoy, Galgo, etc.)
+  celular_cliente    String
+  celular_referencia String
+  
+  cuota_inicial      Decimal   @db.Decimal(10, 2)
+  monto_cuota        Decimal   @db.Decimal(10, 2)
+  cantidad_cuotas    Int
+  frecuencia_pago    String    // Semanal, Quincenal, Mensual
+  cronograma         Json      // [{ nro: 1, fecha: "2026-08-10", monto: 150 }]
+  
+  estado_reembolso   String    @default("PENDIENTE") // PENDIENTE, COBRADO
+  fecha_reembolso    DateTime?
+  
+  created_at         DateTime  @default(now())
+  @@map("ventas_financiadas")
 }

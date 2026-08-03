@@ -11,6 +11,16 @@ export class SaleService {
             cantidad: number;
             precio_unit: number;
         }>;
+        ventaFinanciada?: {
+            financiera: string;
+            celular_cliente: string;
+            celular_referencia: string;
+            cuota_inicial: number;
+            monto_cuota: number;
+            cantidad_cuotas: number;
+            frecuencia_pago: string;
+            cronograma: any;
+        };
     }) {
         const total = data.items.reduce((acc, item) => acc + (item.cantidad * item.precio_unit), 0);
 
@@ -81,6 +91,24 @@ export class SaleService {
                         data: { estado_inventario: 'Vendido' }
                     });
                 }
+            }
+
+            // Crear Venta Financiada si corresponde
+            if (data.ventaFinanciada) {
+                await (tx as any).ventaFinanciada.create({
+                    data: {
+                        ventaId: venta.id,
+                        financiera: data.ventaFinanciada.financiera,
+                        celular_cliente: data.ventaFinanciada.celular_cliente,
+                        celular_referencia: data.ventaFinanciada.celular_referencia,
+                        cuota_inicial: data.ventaFinanciada.cuota_inicial,
+                        monto_cuota: data.ventaFinanciada.monto_cuota,
+                        cantidad_cuotas: data.ventaFinanciada.cantidad_cuotas,
+                        frecuencia_pago: data.ventaFinanciada.frecuencia_pago,
+                        cronograma: data.ventaFinanciada.cronograma,
+                        estado_reembolso: 'PENDIENTE'
+                    }
+                });
             }
 
             return venta;
@@ -227,6 +255,35 @@ export class SaleService {
                 where: { id },
                 data: { tipo_documento: newType, serie, correlativo }
             });
+        });
+    }
+
+    async getFinancedSales() {
+        return await (prisma as any).ventaFinanciada.findMany({
+            include: {
+                venta: {
+                    include: {
+                        cliente: true,
+                        detalles: {
+                            include: {
+                                producto: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { created_at: 'desc' }
+        });
+    }
+
+    async updateReimbursement(id: string, estado: string) {
+        const fecha = estado === 'COBRADO' ? new Date() : null;
+        return await (prisma as any).ventaFinanciada.update({
+            where: { id },
+            data: {
+                estado_reembolso: estado,
+                fecha_reembolso: fecha
+            }
         });
     }
 }
