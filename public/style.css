@@ -456,4 +456,132 @@ select option {
 
 .cfg-list li span {
     font-weight: 400 !important;
+}
+
+/* ESTILOS PARA MENÚ FLOTANTE MÓVIL (TRES PUNTOS) */
+.more-menu-popup {
+    position: fixed;
+    bottom: 80px;
+    right: 15px;
+    background: #11122a; /* Fondo sólido oscuro para evitar transparencias raras */
+    border: 1px solid var(--neon);
+    border-radius: 15px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 255, 242, 0.15);
+    z-index: 1001;
+    backdrop-filter: blur(12px);
+    min-width: 200px;
+    animation: slideUp 0.25s ease-out;
+}
+
+.more-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 10px;
+    transition: background 0.2s, color 0.2s;
+    font-size: 0.85rem;
+}
+
+.more-menu-item i {
+    font-size: 1rem;
+    color: var(--neon);
+    width: 20px;
+    text-align: center;
+}
+
+.more-menu-item:hover {
+    background: var(--glass);
+    color: var(--text);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* RESPONSIVIDAD PARA DISPOSITIVOS MÓVILES (VERTICAL) */
+@media (max-width: 768px) {
+    /* Barra inferior - Ocultar enlaces secundarios y mostrar botón más */
+    .nav-link.nav-secondary {
+        display: none !important;
+    }
+    
+    #more-menu-btn {
+        display: flex !important;
+    }
+
+    /* Área de Contenido */
+    .content {
+        padding: 1rem 1rem 95px 1rem !important;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 1.2rem;
+    }
+
+    .top-bar .logo {
+        margin-bottom: 5px;
+    }
+
+    /* POS Responsivo Vertical */
+    .pos-container {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        gap: 1.5rem !important;
+    }
+
+    .pos-checkout {
+        position: static !important;
+    }
+
+    /* Grillas y Formularios */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    div[style*="grid-template-columns"], 
+    form div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Modales adaptados verticalmente */
+    .modal-content {
+        padding: 1.5rem !important;
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Módulo de Ventas en Cuotas responsivo */
+    #tab-financed-register > div {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tablas con scroll horizontal para evitar desbordes */
+    .inventory-table-wrapper, 
+    div[style*="overflow-x"] {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+    }
 }

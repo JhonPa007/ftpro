@@ -311,6 +311,10 @@ function updateClock() {
 }
 
 function showModule(moduleId) {
+    // Cerrar menú flotante si está abierto
+    const moreMenu = document.getElementById('more-menu-dropdown');
+    if (moreMenu) moreMenu.style.display = 'none';
+
     const modules = ['dashboard', 'pos', 'inventory', 'support', 'crm', 'config', 'sales-history', 'financed-sales'];
     modules.forEach(m => {
         const el = document.getElementById(`module-${m}`);
@@ -1529,10 +1533,32 @@ async function confirmReimbursement(id) {
 
 window.confirmReimbursement = confirmReimbursement;
 
+function toggleMoreMenu(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const el = document.getElementById('more-menu-dropdown');
+    if (el) {
+        const isHidden = el.style.display === 'none';
+        el.style.display = isHidden ? 'flex' : 'none';
+    }
+}
+
+window.toggleMoreMenu = toggleMoreMenu;
+
 // Cerrar dropdowns al hacer clic fuera
 document.addEventListener('click', (e) => {
+    // Cerrar dropdowns de búsqueda
     if (!e.target.closest('.form-group')) {
         const dropdowns = document.querySelectorAll('.search-dropdown');
         dropdowns.forEach(d => d.style.display = 'none');
+    }
+    
+    // Cerrar menú flotante "Más"
+    const dropdown = document.getElementById('more-menu-dropdown');
+    const moreBtn = document.getElementById('more-menu-btn');
+    if (dropdown && dropdown.style.display !== 'none' && !dropdown.contains(e.target) && (!moreBtn || !moreBtn.contains(e.target))) {
+        dropdown.style.display = 'none';
     }
 });

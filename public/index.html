@@ -30,26 +30,46 @@
             <a href="#" class="nav-link" onclick="showModule('pos')" data-module="pos">
                 <i class="fas fa-shopping-cart"></i> <span>Punto de Venta</span>
             </a>
-            <a href="#" class="nav-link sublink" onclick="showModule('sales-history')" data-module="pos"
-                style="padding-left: 2.5rem; font-size: 0.85rem; opacity: 0.8;">
-                <i class="fas fa-history"></i> <span>Historial Ventas</span>
-            </a>
             <a href="#" class="nav-link" onclick="showModule('financed-sales')" data-module="financed-sales">
                 <i class="fas fa-hand-holding-usd"></i> <span>Ventas en Cuotas</span>
             </a>
             <a href="#" class="nav-link" onclick="showModule('inventory')" data-module="inventory">
                 <i class="fas fa-boxes"></i> <span>Inventario</span>
             </a>
-            <a href="#" class="nav-link" onclick="showModule('support')" data-module="support">
+            <a href="#" class="nav-link nav-secondary" onclick="showModule('sales-history')" data-module="sales-history">
+                <i class="fas fa-history"></i> <span>Historial Ventas</span>
+            </a>
+            <a href="#" class="nav-link nav-secondary" onclick="showModule('support')" data-module="support">
                 <i class="fas fa-tools"></i> <span>Servicio Técnico</span>
             </a>
-            <a href="#" class="nav-link" onclick="showModule('crm')" data-module="crm">
+            <a href="#" class="nav-link nav-secondary" onclick="showModule('crm')" data-module="crm">
                 <i class="fas fa-users"></i> <span>Clientes (CRM)</span>
             </a>
-            <a href="#" class="nav-link" onclick="showModule('config')" data-module="config">
+            <a href="#" class="nav-link nav-secondary" onclick="showModule('config')" data-module="config">
                 <i class="fas fa-cog"></i> <span>Configuración</span>
             </a>
+            
+            <!-- Botón Más (Solo visible en móviles) -->
+            <a href="#" class="nav-link" id="more-menu-btn" onclick="window.toggleMoreMenu(event)" style="display: none;">
+                <i class="fas fa-ellipsis-h"></i> <span>Más</span>
+            </a>
         </nav>
+
+        <!-- Dropdown emergente de menú "Más" -->
+        <div id="more-menu-dropdown" class="more-menu-popup" style="display: none;">
+            <a href="#" class="more-menu-item" onclick="showModule('sales-history')">
+                <i class="fas fa-history"></i> <span>Historial Ventas</span>
+            </a>
+            <a href="#" class="more-menu-item" onclick="showModule('support')">
+                <i class="fas fa-tools"></i> <span>Servicio Técnico</span>
+            </a>
+            <a href="#" class="more-menu-item" onclick="showModule('crm')">
+                <i class="fas fa-users"></i> <span>Clientes (CRM)</span>
+            </a>
+            <a href="#" class="more-menu-item" onclick="showModule('config')">
+                <i class="fas fa-cog"></i> <span>Configuración</span>
+            </a>
+        </div>
         <div class="sidebar-footer">
             <p>v1.2.0 | Producción Ready</p>
         </div>
