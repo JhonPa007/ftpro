@@ -715,64 +715,82 @@
 
     <!-- MODAL PRODUCTO -->
     <div id="modal-product" class="modal" style="display: none;">
-        <div class="modal-content card">
+        <div class="modal-content card" style="max-width: 850px; width: 100%;">
             <span class="close-modal" onclick="closeProductModal()">&times;</span>
-            <h2>Registro de Nuevo Producto</h2>
+            <h2 style="margin-bottom: 1.5rem;">Registro de Nuevo Producto</h2>
             <form id="form-new-product">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <label>SKU / Código</label>
-                            <button type="button" class="btn-micro" onclick="window.generateSku()" style="height: 18px; padding: 0 8px; font-size: 0.7rem; line-height: 1; border-radius: 4px; background: var(--glass); color: var(--neon); border: 1px solid var(--glass-border); cursor: pointer;">Generar</button>
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+                    <!-- Columna Izquierda: Información General -->
+                    <div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label>SKU / Código</label>
+                                    <button type="button" class="btn-micro" onclick="window.generateSku()" style="height: 18px; padding: 0 8px; font-size: 0.7rem; line-height: 1; border-radius: 4px; background: var(--glass); color: var(--neon); border: 1px solid var(--glass-border); cursor: pointer;">Generar</button>
+                                </div>
+                                <input type="text" id="prod-sku" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre del Producto</label>
+                                <input type="text" id="prod-name" required placeholder="Ej: iPhone 13 Pro Max">
+                            </div>
                         </div>
-                        <input type="text" id="prod-sku" required>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label>Categoría</label>
+                                    <button type="button" class="btn-micro"
+                                        onclick="quickAddMaster('categories', 'prod-category')"
+                                        style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
+                                </div>
+                                <select id="prod-category" required></select>
+                            </div>
+                            <div class="form-group">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label>Marca</label>
+                                    <button type="button" class="btn-micro" onclick="quickAddMaster('brands', 'prod-brand')"
+                                        style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
+                                </div>
+                                <select id="prod-brand" required></select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Precio Compra (S/)</label>
+                                <input type="number" id="prod-price-buy" step="0.01" required placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label>Precio Venta (Retail) (S/)</label>
+                                <input type="number" id="prod-price-retail" step="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; margin-top: 5px;">
+                            <div class="form-group">
+                                <label>Stock Mínimo (Alerta)</label>
+                                <input type="number" id="prod-stock-min" value="5" min="1" required>
+                            </div>
+                            <div class="form-group" style="justify-content: center; align-items: flex-start; gap: 5px;">
+                                <label style="margin-bottom: 2px;">Control de Dispositivo</label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text); padding-top: 6px;">
+                                    <input type="checkbox" id="prod-require-imei" checked style="width: 16px; height: 16px; accent-color: var(--neon); cursor: pointer;"> Requiere IMEI/Serie
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Nombre del Producto</label>
-                        <input type="text" id="prod-name" required>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <label>Categoría</label>
+
+                    <!-- Columna Derecha: Características (Atributos) -->
+                    <div style="display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="font-size: 1.1rem; color: #fff;">Características (Atributos)</h3>
                             <button type="button" class="btn-micro"
-                                onclick="quickAddMaster('categories', 'prod-category')"
+                                onclick="quickAddMaster('attributes', 'prod-attributes-container')"
                                 style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
                         </div>
-                        <select id="prod-category" required></select>
-                    </div>
-                    <div class="form-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <label>Marca</label>
-                            <button type="button" class="btn-micro" onclick="quickAddMaster('brands', 'prod-brand')"
-                                style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
-                        </div>
-                        <select id="prod-brand" required></select>
+                        <div id="prod-attributes-container"
+                            style="display: flex; flex-direction: column; gap: 8px; max-height: 290px; overflow-y: auto; padding-right: 5px;"></div>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label>Precio Compra (S/)</label>
-                        <input type="number" id="prod-price-buy" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Precio Venta (Retail) (S/)</label>
-                        <input type="number" id="prod-price-retail" step="0.01" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label>Características Sugeridas</label>
-                        <button type="button" class="btn-micro"
-                            onclick="quickAddMaster('attributes', 'prod-attributes-container')"
-                            style="height: 18px; width: 18px; padding: 0; line-height: 1;">+</button>
-                    </div>
-                    <div id="prod-attributes-container"
-                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;"></div>
-                </div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Registrar Producto</button>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1.5rem;">Registrar Producto</button>
             </form>
         </div>
     </div>

@@ -664,10 +664,12 @@ function fillSelect(id, items) {
 function renderAttrSelector(id, items) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = items.map(i => `
-        <div style="display: flex; align-items: center; gap: 5px;">
-            <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}">
-            <label for="chk-${i.id}" style="margin:0; cursor:pointer;">${i.nombre}</label>
-            <input type="text" id="val-${i.id}" placeholder="Valor" style="width: 60px; height: 20px; font-size: 0.7rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--glass-border); gap: 10px; margin-bottom: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" name="attr-check" value="${i.id}" id="chk-${i.id}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--neon);">
+                <label for="chk-${i.id}" style="margin: 0; cursor: pointer; font-size: 0.85rem; color: var(--text);">${i.nombre}</label>
+            </div>
+            <input type="text" id="val-${i.id}" placeholder="Valor (ej: 8GB, Azul)" style="width: 150px; padding: 5px 8px; font-size: 0.8rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); color: #fff;">
         </div>
     `).join('');
 }
@@ -737,8 +739,8 @@ function initFormListeners() {
                 categoriaId: document.getElementById('prod-category').value,
                 precio_compra: parseFloat(document.getElementById('prod-price-buy').value) || 0,
                 precios: { retail: parseFloat(document.getElementById('prod-price-retail').value) || 0 },
-                stock_minimo: 5,
-                requiere_imei: true, // Por defecto por ahora
+                stock_minimo: parseInt(document.getElementById('prod-stock-min').value) || 5,
+                requiere_imei: document.getElementById('prod-require-imei').checked,
                 attributes
             };
 
