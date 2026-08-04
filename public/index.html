@@ -352,22 +352,24 @@
             </div>
 
             <div class="card" style="margin-top: 1.5rem;">
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th># Venta</th>
-                            <th>Fecha</th>
-                            <th>Cliente</th>
-                            <th>Tipo Doc</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sales-history-body">
-                        <!-- Data por JS -->
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th># Venta</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Tipo Doc</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-history-body">
+                            <!-- Data por JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -610,7 +612,7 @@
                         <h3>Cuentas por Cobrar a Financieras</h3>
                         <span style="font-size: 0.85rem; color: var(--text-muted);">Nota: La financiera nos deposita el total restando la inicial (normalmente al día siguiente).</span>
                     </div>
-                    <div style="overflow-x: auto;">
+                    <div class="table-responsive">
                         <table class="inventory-table">
                             <thead>
                                 <tr>

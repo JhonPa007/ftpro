@@ -575,21 +575,27 @@ select option {
     }
 
     /* Tablas con scroll horizontal para evitar desbordes */
-    .inventory-table-wrapper, 
-    div[style*="overflow-x"] {
+    .table-responsive {
         display: block !important;
         width: 100% !important;
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
     
-    .inventory-table {
+    .table-responsive table,
+    .table-responsive .inventory-table {
         min-width: 900px !important;
         width: 100% !important;
     }
 
-    /* Garantizar scroll vertical completo */
+    /* Garantizar que no haya desborde horizontal de la página */
+    html, body {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        width: 100% !important;
+    }
+    
     body {
         overflow-y: auto !important;
         height: auto !important;
@@ -599,5 +605,7 @@ select option {
         padding: 1rem 1rem 120px 1rem !important;
         height: auto !important;
         overflow-y: visible !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
     }
 }
